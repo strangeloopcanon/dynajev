@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+:root {
+  --radius: 2px;
+  --background: #f3efe4;
+  --foreground: #1c1915;
+  --card: #faf7f0;
+  --card-foreground: #1c1915;
+  --popover: #faf7f0;
+  --popover-foreground: #1c1915;
+  --primary: #1c1915;
+  --primary-foreground: #faf7f0;
+  --secondary: #efeae0;
+  --secondary-foreground: #1c1915;
+  --muted: #efeae0;
+  --muted-foreground: #5c564c;
+  --accent: #e7d7b8;
+  --accent-foreground: #1c1915;
+  --destructive: #8c341f;
+  --border: #d7d0c3;
+  --input: #d7d0c3;
+  --ring: #1d5c40;
+  --paper: #faf7f0;
+  --rule: #d7d0c3;
+  --ink-soft: #5c564c;
+  --read: #1d5c40;
+  --read-soft: #e5f0ea;
+  --gen: #8c341f;
+  --gen-soft: #f6e6e0;
+  --warn: #8a5a12;
+  --warn-soft: #f6edd9;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-paper: var(--paper);
+  --color-rule: var(--rule);
+  --color-ink-soft: var(--ink-soft);
+  --color-read: var(--read);
+  --color-read-soft: var(--read-soft);
+  --color-gen: var(--gen);
+  --color-gen-soft: var(--gen-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --radius-sm: 2px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+  --radius-xl: 2px;
+  --font-sans: var(--font-sans-text), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-serif-text), ui-serif, Georgia, serif;
+  --font-mono: var(--font-mono-text), ui-monospace, monospace;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+::selection {
+  background: #e7d7b8;
+}

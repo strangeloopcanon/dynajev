@@ -1,0 +1,194 @@
+{
+  "boolean": [
+    {"id": "b01", "context": "Order 4412: refund of $42.10 issued to the original card on Tuesday. Confirmation number RF-88213.", "question": "Has a refund been issued?", "label": true},
+    {"id": "b02", "context": "We looked into order 4412. No refund has been issued yet because the return has not arrived at our warehouse.", "question": "Has a refund been issued?", "label": false},
+    {"id": "b03", "context": "The package left our Reno facility on Monday and the carrier scan shows it was delivered at 2:14 pm Wednesday, signed by M. Ortiz.", "question": "Was the package delivered?", "label": true},
+    {"id": "b04", "context": "The carrier still lists the package as 'in transit' with no delivery scan. We have opened a trace request.", "question": "Was the package delivered?", "label": false},
+    {"id": "b05", "context": "Hi, I'd like to cancel my subscription effective immediately. Please confirm when this is done.", "question": "Does the customer want to cancel?", "label": true},
+    {"id": "b06", "context": "Hi, I want to keep my subscription but switch from monthly to annual billing. Can you make that change?", "question": "Does the customer want to cancel?", "label": false},
+    {"id": "b07", "context": "The meeting is moved to Thursday at 3 pm. Same room, same dial-in.", "question": "Is the meeting on Thursday?", "label": true},
+    {"id": "b08", "context": "The meeting stays on Tuesday at 3 pm. Only the room changed: we are now in 4B.", "question": "Is the meeting on Thursday?", "label": false},
+    {"id": "b09", "context": "Invoice 2291 total: $1,240.00. Paid in full by wire on March 3. Balance due: $0.00.", "question": "Is the invoice paid?", "label": true},
+    {"id": "b10", "context": "Invoice 2291 total: $1,240.00. Payment due March 3. Balance due: $1,240.00. Second reminder.", "question": "Is the invoice paid?", "label": false},
+    {"id": "b11", "context": "Patient reports no fever, no cough. Temperature 98.4 F. Cleared to return to work.", "question": "Does the patient have a fever?", "label": false},
+    {"id": "b12", "context": "Patient reports chills since last night. Temperature 101.8 F. Advised rest and fluids.", "question": "Does the patient have a fever?", "label": true},
+    {"id": "b13", "context": "The apartment allows cats and dogs under 40 pounds with a one-time pet deposit of $300.", "question": "Are pets allowed?", "label": true},
+    {"id": "b14", "context": "The apartment has a strict no-pets policy. Service animals are the only exception under the law.", "question": "Are pets allowed?", "label": false},
+    {"id": "b15", "context": "Your flight UA 1180 is delayed. New departure time 7:45 pm, gate C22. We apologize for the inconvenience.", "question": "Is the flight delayed?", "label": true},
+    {"id": "b16", "context": "Your flight UA 1180 is on time. Departure 5:10 pm from gate C22. Boarding begins at 4:35 pm.", "question": "Is the flight delayed?", "label": false},
+    {"id": "b17", "context": "I have attached the signed contract and the two W-9 forms you asked for.", "question": "Did the sender attach the contract?", "label": true},
+    {"id": "b18", "context": "I will send the signed contract tomorrow once legal has reviewed clause 7. Nothing is attached to this note.", "question": "Did the sender attach the contract?", "label": false},
+    {"id": "b19", "context": "The store is open Monday through Saturday, 9 am to 8 pm, and closed on Sundays and public holidays.", "question": "Is the store open on Sunday?", "label": false},
+    {"id": "b20", "context": "The store is open every day of the week, 10 am to 6 pm, including Sundays.", "question": "Is the store open on Sunday?", "label": true},
+    {"id": "b21", "context": "I've tried resetting my password three times and the reset email never arrives. I'm locked out of my account.", "question": "Is the customer locked out?", "label": true},
+    {"id": "b22", "context": "I logged in fine, but the dashboard chart shows last month's numbers instead of this month's.", "question": "Is the customer locked out?", "label": false},
+    {"id": "b23", "context": "The recipe needs two eggs, one cup of flour, and a pinch of salt. No dairy at all.", "question": "Does the recipe contain milk?", "label": false},
+    {"id": "b24", "context": "The recipe needs two eggs, one cup of flour, a cup of whole milk, and a pinch of salt.", "question": "Does the recipe contain milk?", "label": true}
+  ],
+  "choice_token": [
+    {"id": "c01", "context": "The bicycle leaning on the fence is red; the one in the garage is blue.", "question": "What color is the bicycle by the fence?", "options": ["red", "blue", "green"], "label": "red"},
+    {"id": "c02", "context": "The bicycle leaning on the fence is red; the one in the garage is blue.", "question": "What color is the bicycle in the garage?", "options": ["red", "blue", "green"], "label": "blue"},
+    {"id": "c03", "context": "Pickup is scheduled for Friday morning. Drop-off will be the following Monday.", "question": "On which day is pickup?", "options": ["Monday", "Wednesday", "Friday"], "label": "Friday"},
+    {"id": "c04", "context": "Pickup is scheduled for Friday morning. Drop-off will be the following Monday.", "question": "On which day is drop-off?", "options": ["Monday", "Wednesday", "Friday"], "label": "Monday"},
+    {"id": "c05", "context": "The soup is served hot. The salad is served cold. The bread arrives warm.", "question": "How is the salad served?", "options": ["hot", "cold", "warm"], "label": "cold"},
+    {"id": "c06", "context": "Our office is in Denver. The warehouse is in Reno, and the data center is in Dallas.", "question": "Where is the warehouse?", "options": ["Denver", "Reno", "Dallas"], "label": "Reno"},
+    {"id": "c07", "context": "The team meets weekly on Tuesdays, with a longer monthly review on the first Thursday.", "question": "How often does the team meet for the review?", "options": ["daily", "weekly", "monthly"], "label": "monthly"},
+    {"id": "c08", "context": "The report is written in Spanish, with an English summary on the last page.", "question": "What language is the main report in?", "options": ["English", "Spanish", "French"], "label": "Spanish"},
+    {"id": "c09", "context": "Rain all morning, clearing by noon; sunny and dry through the evening.", "question": "What is the weather in the morning?", "options": ["rain", "sun", "snow"], "label": "rain"},
+    {"id": "c10", "context": "Rain all morning, clearing by noon; sunny and dry through the evening.", "question": "What is the weather in the evening?", "options": ["rain", "sun", "snow"], "label": "sun"},
+    {"id": "c11", "context": "Small and medium are sold out. Only large and extra-large remain in stock.", "question": "Which size is available?", "options": ["small", "medium", "large"], "label": "large"},
+    {"id": "c12", "context": "The left lane is closed for repairs. Traffic is moving in the center and right lanes.", "question": "Which lane is closed?", "options": ["left", "center", "right"], "label": "left"}
+  ],
+  "choice_phrase": [
+    {"id": "p01", "context": "I was charged twice for the same order this month. Please refund the duplicate charge.", "question": "Where should this ticket go?", "options": ["billing and payments", "technical support", "account access", "sales inquiry"], "label": "billing and payments"},
+    {"id": "p02", "context": "The app crashes every time I open the settings screen on my Android phone. Version 4.2.1.", "question": "Where should this ticket go?", "options": ["billing and payments", "technical support", "account access", "sales inquiry"], "label": "technical support"},
+    {"id": "p03", "context": "I can't log in. It says my password is wrong and the reset link expired.", "question": "Where should this ticket go?", "options": ["billing and payments", "technical support", "account access", "sales inquiry"], "label": "account access"},
+    {"id": "p04", "context": "We are a 40-person team and want pricing for the enterprise plan with SSO.", "question": "Where should this ticket go?", "options": ["billing and payments", "technical support", "account access", "sales inquiry"], "label": "sales inquiry"},
+    {"id": "p05", "context": "The mug arrived smashed. Please send another one this week.", "question": "What does the customer need next?", "options": ["a replacement item", "a tracking update", "a billing review"], "label": "a replacement item"},
+    {"id": "p06", "context": "My order shipped a week ago but the tracking page has not updated since. Where is it?", "question": "What does the customer need next?", "options": ["a replacement item", "a tracking update", "a billing review"], "label": "a tracking update"},
+    {"id": "p07", "context": "The receipt shows $89 but my card was charged $98. Can someone look at this?", "question": "What does the customer need next?", "options": ["a replacement item", "a tracking update", "a billing review"], "label": "a billing review"},
+    {"id": "p08", "context": "Thanks for the quick fix yesterday, everything works now. No further action needed.", "question": "What is the tone of this message?", "options": ["grateful and satisfied", "angry and frustrated", "neutral and informational"], "label": "grateful and satisfied"},
+    {"id": "p09", "context": "This is the third time I've asked. Nobody replies. This is unacceptable.", "question": "What is the tone of this message?", "options": ["grateful and satisfied", "angry and frustrated", "neutral and informational"], "label": "angry and frustrated"},
+    {"id": "p10", "context": "Attached is the Q3 usage report. Totals are on page 2. Let me know if you need the raw CSV.", "question": "What is the tone of this message?", "options": ["grateful and satisfied", "angry and frustrated", "neutral and informational"], "label": "neutral and informational"},
+    {"id": "p11", "context": "Please move my appointment from Tuesday to any time on Friday afternoon.", "question": "What is the customer asking for?", "options": ["reschedule an appointment", "cancel an appointment", "book a new appointment"], "label": "reschedule an appointment"},
+    {"id": "p12", "context": "I no longer need the Tuesday appointment. Please take it off the calendar; I don't need another one.", "question": "What is the customer asking for?", "options": ["reschedule an appointment", "cancel an appointment", "book a new appointment"], "label": "cancel an appointment"}
+  ],
+  "ordinal": [
+    {"id": "r01", "context": "Review: One star. The blender died after two uses and support never answered.", "question": "How many stars did the reviewer give?", "levels": ["1 star", "2 stars", "3 stars", "4 stars", "5 stars"], "label": "1 star"},
+    {"id": "r02", "context": "Review: Five stars. Best headphones I have owned, battery lasts all week.", "question": "How many stars did the reviewer give?", "levels": ["1 star", "2 stars", "3 stars", "4 stars", "5 stars"], "label": "5 stars"},
+    {"id": "r03", "context": "Review: Three stars. It works, but the setup took an hour and the manual is wrong in places.", "question": "How many stars did the reviewer give?", "levels": ["1 star", "2 stars", "3 stars", "4 stars", "5 stars"], "label": "3 stars"},
+    {"id": "r04", "context": "Review: Four stars. Great picture quality; docking one star because the remote is flimsy.", "question": "How many stars did the reviewer give?", "levels": ["1 star", "2 stars", "3 stars", "4 stars", "5 stars"], "label": "4 stars"},
+    {"id": "r05", "context": "Review: Two stars. Arrived late and the color is not what the photo showed.", "question": "How many stars did the reviewer give?", "levels": ["1 star", "2 stars", "3 stars", "4 stars", "5 stars"], "label": "2 stars"},
+    {"id": "r06", "context": "Ticket priority: CRITICAL. Production database is down for all customers.", "question": "What is the ticket priority?", "levels": ["low", "medium", "high", "critical"], "label": "critical"},
+    {"id": "r07", "context": "Ticket priority: low. Typo in the footer of the marketing page.", "question": "What is the ticket priority?", "levels": ["low", "medium", "high", "critical"], "label": "low"},
+    {"id": "r08", "context": "Ticket priority: high. Checkout fails for about 10% of users on Safari.", "question": "What is the ticket priority?", "levels": ["low", "medium", "high", "critical"], "label": "high"},
+    {"id": "r09", "context": "Ticket priority: medium. Export to CSV drops the last column when there are more than 500 rows.", "question": "What is the ticket priority?", "levels": ["low", "medium", "high", "critical"], "label": "medium"},
+    {"id": "r10", "context": "Survey answer: 'Very satisfied.' Comment: the onboarding call was exactly what we needed.", "question": "How satisfied is the respondent?", "levels": ["very dissatisfied", "dissatisfied", "neutral", "satisfied", "very satisfied"], "label": "very satisfied"},
+    {"id": "r11", "context": "Survey answer: 'Very dissatisfied.' Comment: the product never worked and the refund took a month.", "question": "How satisfied is the respondent?", "levels": ["very dissatisfied", "dissatisfied", "neutral", "satisfied", "very satisfied"], "label": "very dissatisfied"},
+    {"id": "r12", "context": "Survey answer: 'Neutral.' Comment: it does what it says, nothing more.", "question": "How satisfied is the respondent?", "levels": ["very dissatisfied", "dissatisfied", "neutral", "satisfied", "very satisfied"], "label": "neutral"}
+  ],
+  "multilabel": [
+    {"id": "m01", "context": "The mug arrived smashed and the box was crushed. I want my money back.", "question": "Which flags apply?", "options": ["damage", "refund request", "delay", "praise"], "label": ["damage", "refund request"]},
+    {"id": "m02", "context": "Order arrived two weeks late, but the product is perfect and the packaging was lovely. Thank you!", "question": "Which flags apply?", "options": ["damage", "refund request", "delay", "praise"], "label": ["delay", "praise"]},
+    {"id": "m03", "context": "Everything arrived on time and in one piece. Great service as always.", "question": "Which flags apply?", "options": ["damage", "refund request", "delay", "praise"], "label": ["praise"]},
+    {"id": "m04", "context": "Please refund order 5531. It has been three weeks and it still has not shipped.", "question": "Which flags apply?", "options": ["damage", "refund request", "delay", "praise"], "label": ["refund request", "delay"]},
+    {"id": "m05", "context": "The screen has a crack across the corner. I don't want a refund, just a replacement.", "question": "Which flags apply?", "options": ["damage", "refund request", "delay", "praise"], "label": ["damage"]},
+    {"id": "m06", "context": "Where is my order? Tracking has said 'label created' for ten days.", "question": "Which flags apply?", "options": ["damage", "refund request", "delay", "praise"], "label": ["delay"]},
+    {"id": "m07", "context": "The lamp arrived with a bent shade and a week later than promised. Refund me, please.", "question": "Which flags apply?", "options": ["damage", "refund request", "delay", "praise"], "label": ["damage", "refund request", "delay"]},
+    {"id": "m08", "context": "Cancel the second charge and refund it. Otherwise everything is fine and the support agent was kind.", "question": "Which flags apply?", "options": ["damage", "refund request", "delay", "praise"], "label": ["refund request", "praise"]}
+  ],
+  "extract": [
+    {"id": "e01", "context": "The replacement mug still arrived smashed. The box was crushed.", "question": "Quote the word describing the mug's condition.", "label": "smashed"},
+    {"id": "e02", "context": "Confirmation number RF-88213 was issued for the refund on Tuesday.", "question": "Quote the confirmation number.", "label": "RF-88213"},
+    {"id": "e03", "context": "Your flight is delayed. New departure time 7:45 pm, gate C22.", "question": "Quote the gate.", "label": "C22"},
+    {"id": "e04", "context": "The package was signed for by M. Ortiz at 2:14 pm on Wednesday.", "question": "Quote the name of the person who signed.", "label": "M. Ortiz"},
+    {"id": "e05", "context": "Invoice 2291 total: $1,240.00. Paid in full by wire on March 3.", "question": "Quote the invoice total.", "label": "$1,240.00"},
+    {"id": "e06", "context": "Our warehouse is in Reno and the data center is in Dallas.", "question": "Quote the city where the data center is.", "label": "Dallas"}
+  ],
+  "schema": [
+    {
+      "id": "s01",
+      "context": "Subject: refund and a broken mug\n\nHi, the refund for order 4412 was issued on Tuesday, thank you. The replacement mug arrived smashed. Please send another one this week. Rating this experience 2 stars for now.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "refund_issued": {"type": "boolean", "description": "Has the refund been issued?"},
+          "need": {"description": "What does the customer need next?", "enum": ["a replacement item", "a tracking update", "a billing review"]},
+          "stars": {"type": "integer", "minimum": 1, "maximum": 5, "description": "How many stars did the customer give?"},
+          "flags": {"type": "array", "description": "Which flags apply?", "items": {"enum": ["damage", "refund request", "delay", "praise"]}}
+        }
+      },
+      "label": {"refund_issued": true, "need": "a replacement item", "stars": "2", "flags": ["damage"]}
+    },
+    {
+      "id": "s02",
+      "context": "Ticket 7710. Priority: high. The customer cannot log in after the password reset; the reset link expired. No payment issue. They have been polite and patient.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "locked_out": {"type": "boolean", "description": "Is the customer locked out?"},
+          "queue": {"description": "Where should this ticket go?", "enum": ["billing and payments", "technical support", "account access", "sales inquiry"]},
+          "priority": {"type": "integer", "minimum": 0, "maximum": 3, "description": "Priority level: 0 low, 1 medium, 2 high, 3 critical"}
+        }
+      },
+      "label": {"locked_out": true, "queue": "account access", "priority": "2"}
+    },
+    {
+      "id": "s03",
+      "context": "Order 5531 shipped three weeks ago and still shows 'in transit'. Nothing has arrived. I want a refund now. One star.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "delivered": {"type": "boolean", "description": "Was the package delivered?"},
+          "need": {"description": "What does the customer need next?", "enum": ["a replacement item", "a tracking update", "a billing review"]},
+          "stars": {"type": "integer", "minimum": 1, "maximum": 5, "description": "How many stars did the customer give?"},
+          "flags": {"type": "array", "description": "Which flags apply?", "items": {"enum": ["damage", "refund request", "delay", "praise"]}}
+        }
+      },
+      "label": {"delivered": false, "need": "a billing review", "stars": "1", "flags": ["refund request", "delay"]}
+    },
+    {
+      "id": "s04",
+      "context": "Five stars. The headphones arrived a day early, sound fantastic, and the support agent who helped me pick them was wonderful. Nothing to fix.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "wants_refund": {"type": "boolean", "description": "Does the customer want a refund?"},
+          "tone": {"description": "What is the tone of this message?", "enum": ["grateful and satisfied", "angry and frustrated", "neutral and informational"]},
+          "stars": {"type": "integer", "minimum": 1, "maximum": 5, "description": "How many stars did the customer give?"},
+          "flags": {"type": "array", "description": "Which flags apply?", "items": {"enum": ["damage", "refund request", "delay", "praise"]}}
+        }
+      },
+      "label": {"wants_refund": false, "tone": "grateful and satisfied", "stars": "5", "flags": ["praise"]}
+    },
+    {
+      "id": "s05",
+      "context": "We are a 40-person team evaluating the enterprise plan. Can you send pricing with SSO included? Not urgent, sometime this month is fine.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "existing_customer_issue": {"type": "boolean", "description": "Is this a problem with an existing order or account?"},
+          "queue": {"description": "Where should this ticket go?", "enum": ["billing and payments", "technical support", "account access", "sales inquiry"]},
+          "priority": {"type": "integer", "minimum": 0, "maximum": 3, "description": "Priority level: 0 low, 1 medium, 2 high, 3 critical"}
+        }
+      },
+      "label": {"existing_customer_issue": false, "queue": "sales inquiry", "priority": "0"}
+    },
+    {
+      "id": "s06",
+      "context": "The lamp arrived with a bent shade and a week later than promised. I was charged twice as well. Refund both charges. Three stars because the phone agent was helpful.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "damaged": {"type": "boolean", "description": "Did the item arrive damaged?"},
+          "queue": {"description": "Where should this ticket go?", "enum": ["billing and payments", "technical support", "account access", "sales inquiry"]},
+          "stars": {"type": "integer", "minimum": 1, "maximum": 5, "description": "How many stars did the customer give?"},
+          "flags": {"type": "array", "description": "Which flags apply?", "items": {"enum": ["damage", "refund request", "delay", "praise"]}}
+        }
+      },
+      "label": {"damaged": true, "queue": "billing and payments", "stars": "3", "flags": ["damage", "refund request", "delay", "praise"]}
+    }
+  ],
+  "tone_fit": {
+    "question": "What is the tone of this note?",
+    "options": ["grateful", "angry"],
+    "items": [
+      {"context": "Thanks so much, the refund landed this morning.", "label": "grateful"},
+      {"context": "Really appreciate you fixing this so fast.", "label": "grateful"},
+      {"context": "Thank you, that was quick and painless.", "label": "grateful"},
+      {"context": "You went above and beyond. Much appreciated.", "label": "grateful"},
+      {"context": "Got the replacement today. Perfect. Thank you!", "label": "grateful"},
+      {"context": "Appreciate the quick refund, that helped a lot.", "label": "grateful"},
+      {"context": "Kudos to your team, the issue is resolved.", "label": "grateful"},
+      {"context": "That was exactly the help I needed. Thanks again.", "label": "grateful"},
+      {"context": "This is unacceptable and I want a manager.", "label": "angry"},
+      {"context": "Furious. Nothing has been resolved after three weeks.", "label": "angry"},
+      {"context": "Stop ignoring me. This is outrageous.", "label": "angry"},
+      {"context": "I am done with your company. Worst service ever.", "label": "angry"},
+      {"context": "How many times do I have to ask? Fix it now.", "label": "angry"},
+      {"context": "Your agent hung up on me. I am beyond frustrated.", "label": "angry"},
+      {"context": "Absolutely ridiculous. Refund me today or I dispute the charge.", "label": "angry"},
+      {"context": "I have never been treated this badly by a support team.", "label": "angry"}
+    ]
+  }
+}

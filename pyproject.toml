@@ -1,0 +1,39 @@
+[project]
+name = "readhead"
+version = "0.2.0"
+description = "Compile a readout head from the shape of a question and run it on a frozen causal model."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+keywords = ["llm", "classification", "structured-output", "logits", "qwen"]
+dependencies = [
+  "torch",
+  "transformers>=5.17",  # first line tested with the Qwen3.5 hybrid cache
+  "accelerate",
+  "fastapi",
+  "uvicorn",
+  "pydantic>=2",
+  "numpy",
+]
+
+[project.urls]
+Repository = "https://github.com/strangeloopcanon/readhead"
+
+[project.optional-dependencies]
+dev = ["pytest", "httpx"]
+
+[project.scripts]
+readhead = "readhead.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+  "live: hits a downloaded model",
+]

@@ -1,0 +1,12 @@
+.venv/
+.pydeps/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+.hf-cache/
+web/node_modules/
+web/.next/
+web/out/
+.DS_Store
