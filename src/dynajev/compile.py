@@ -17,11 +17,6 @@ from dynajev.errors import CompileError
 Kind = Literal["boolean", "categorical", "ordinal", "multilabel", "extract", "generate", "open"]
 Strategy = Literal["auto", "slice", "letter", "margin", "prototype"]
 
-_BOOL_START = re.compile(
-    r"^(is|are|was|were|do|does|did|can|could|has|have|had|will|would|should|may|might)\b",
-    re.IGNORECASE,
-)
-_EXTRACT_HINT = re.compile(r"\b(quote|extract|span|copy)\b", re.IGNORECASE)
 _LETTERS = list("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwx")
 
 
@@ -46,6 +41,20 @@ _TYPE_TO_KIND: dict[str, str] = {
 }
 
 
+class DependsOn(BaseModel):
+    """Ask this question only when another question's answer matches `when` (a value or a list of values)."""
+
+    question: str
+    when: Any = True
+
+
+class Criteria(BaseModel):
+    """What makes a `noul` true and what makes it false, each judged on its own."""
+
+    true: str | None = None
+    false: str | None = None
+
+
 class QuestionIn(BaseModel):
     """One typed question. The type is declared, not inferred."""
 
@@ -53,7 +62,13 @@ class QuestionIn(BaseModel):
     instructions: str
     options: list[str] | None = None
     levels: list[str] | None = None
+    criteria: Criteria | None = None
     strategy: Strategy = "auto"
+    depends_on: DependsOn | None = None
+    # Earlier answers this question's prompt should see. The first one that is
+    # a single-branch closed question is continued as a conversation, so this
+    # question forks that question's cache.
+    include_answers: list[str] | None = None
 
 
 class DecideIn(BaseModel):
@@ -62,17 +77,21 @@ class DecideIn(BaseModel):
     context: str
     # Primary contract: a map of typed questions, answered in one call.
     questions: dict[str, QuestionIn] | None = None
-    # Fallback contract: one question whose type is inferred from the shape
-    # (options -> choice, levels -> score, exclusive=false -> flags, an
-    # auxiliary-verb opening -> noul, otherwise open). The response says which.
+    # Fallback contract: one question. The type is either given, or read off the
+    # shape when the shape decides it (levels -> score, options with
+    # exclusive=false -> flags, options -> choice). Wording is never parsed.
     question: str | None = None
-    type: Literal["auto", "boolean", "categorical", "ordinal", "multilabel", "open", "schema"] = "auto"
+    type: Literal["auto", "noul", "choice", "score", "flags", "quote", "open", "boolean", "categorical", "ordinal", "multilabel", "extract", "schema"] = "auto"
     options: list[str] | None = None
     levels: list[str] | None = None
     schema_def: dict[str, Any] | None = Field(default=None, alias="schema")
     exclusive: bool | None = None
     strategy: Strategy = "auto"
     examples: list[ExampleIn] | None = None
+    # Keep heads fitted from `examples` in the head store, keyed by signature.
+    save_heads: bool = False
+    # Apply stored heads to fields whose signature matches.
+    use_heads: bool = True
 
 
 class FieldJob(BaseModel):
@@ -84,6 +103,10 @@ class FieldJob(BaseModel):
     # Tokens the ordinal head reads, parallel to labels. Digits, not the names.
     score_tokens: list[str] | None = None
     origin: float = 0.0
+    qtype: str | None = None
+    criteria: dict[str, str] | None = None
+    depends_on: Any = None
+    include_answers: list[str] = []
 
 
 def compile_request(req: DecideIn) -> tuple[list[FieldJob], list[str]]:
@@ -98,7 +121,10 @@ def compile_request(req: DecideIn) -> tuple[list[FieldJob], list[str]]:
         if len(req.questions) > 32:
             raise CompileError("At most 32 questions per call.")
         jobs = [_typed_job(name, q) for name, q in req.questions.items()]
+        stages = order_stages(jobs)
         notes.append(f"Compiled {len(jobs)} typed question{'s' if len(jobs) != 1 else ''}. Types were declared, not inferred.")
+        if len(stages) > 1:
+            notes.append(f"Dependent questions run in {len(stages)} stages; a question waits for the answers it depends on.")
         return jobs, notes
     if req.schema_def is not None:
         jobs = compile_schema(req.schema_def, req.strategy)
@@ -132,6 +158,8 @@ def compile_request(req: DecideIn) -> tuple[list[FieldJob], list[str]]:
         if not 2 <= len(levels) <= 10:
             raise CompileError("A rating needs between 2 and 10 levels.")
         return [_ordinal_job("answer", question, levels, origin=0.0)], notes
+    if kind == "extract":
+        return [FieldJob(id="answer", kind="extract", question=question)], notes
     if kind == "open":
         if strategy != "auto":
             notes.append("An open question has no rows to slice. The requested strategy does not apply.")
@@ -146,18 +174,74 @@ def _typed_job(name: str, q: QuestionIn) -> FieldJob:
     if not instructions:
         raise CompileError(f"Question {name} has empty instructions.")
     kind = _TYPE_TO_KIND[q.type]
+    if q.criteria is not None and kind != "boolean":
+        raise CompileError(f"Question {name}: criteria apply to noul questions only.")
     if kind == "boolean":
-        return FieldJob(id=name, kind="boolean", question=instructions, labels=["no", "yes"])
-    if kind == "categorical":
-        return FieldJob(id=name, kind="categorical", question=instructions, labels=_labels(q.options, f"options for {name}"), strategy=q.strategy)
-    if kind == "multilabel":
-        return FieldJob(id=name, kind="multilabel", question=instructions, labels=_labels(q.options, f"options for {name}"))
-    if kind == "ordinal":
-        levels = _labels(q.levels, f"levels for {name}")
-        return _ordinal_job(name, instructions, levels, origin=0.0)
-    if kind == "extract":
-        return FieldJob(id=name, kind="extract", question=instructions)
-    return FieldJob(id=name, kind="open", question=instructions)
+        job = FieldJob(id=name, kind="boolean", question=instructions, labels=["no", "yes"])
+        if q.criteria is not None:
+            criteria = {k: v.strip() for k, v in q.criteria.model_dump().items() if v and v.strip()}
+            if not criteria:
+                raise CompileError(f"Question {name}: criteria need a true or a false description.")
+            job.criteria = criteria
+    elif kind == "categorical":
+        job = FieldJob(id=name, kind="categorical", question=instructions, labels=_labels(q.options, f"options for {name}"), strategy=q.strategy)
+    elif kind == "multilabel":
+        job = FieldJob(id=name, kind="multilabel", question=instructions, labels=_labels(q.options, f"options for {name}"))
+    elif kind == "ordinal":
+        job = _ordinal_job(name, instructions, _labels(q.levels, f"levels for {name}"), origin=0.0)
+    elif kind == "extract":
+        job = FieldJob(id=name, kind="extract", question=instructions)
+    else:
+        job = FieldJob(id=name, kind="open", question=instructions)
+    job.qtype = q.type
+    job.depends_on = q.depends_on
+    job.include_answers = list(dict.fromkeys(q.include_answers or []))
+    return job
+
+
+def order_stages(jobs: list[FieldJob]) -> list[list[str]]:
+    """Group questions into stages: each stage only needs answers from earlier ones.
+
+    Raises on unknown ids, self-references, unmatched `when` values, and cycles.
+    """
+
+    by_id = {job.id: job for job in jobs}
+    parents: dict[str, set[str]] = {job.id: set() for job in jobs}
+    for job in jobs:
+        needs = list(job.include_answers)
+        if job.depends_on is not None:
+            needs.append(job.depends_on.question)
+            _check_when(job, by_id.get(job.depends_on.question))
+        for parent in needs:
+            if parent == job.id:
+                raise CompileError(f"Question {job.id} cannot depend on itself.")
+            if parent not in by_id:
+                raise CompileError(f"Question {job.id} refers to unknown question {parent!r}.")
+            parents[job.id].add(parent)
+    stages: list[list[str]] = []
+    done: set[str] = set()
+    while len(done) < len(jobs):
+        ready = [job.id for job in jobs if job.id not in done and parents[job.id] <= done]
+        if not ready:
+            cycle = sorted(job.id for job in jobs if job.id not in done)
+            raise CompileError(f"Questions {', '.join(cycle)} depend on each other in a cycle.")
+        stages.append(ready)
+        done.update(ready)
+    return stages
+
+
+def _check_when(job: FieldJob, parent: FieldJob | None) -> None:
+    if parent is None or job.depends_on is None:
+        return
+    values = job.depends_on.when if isinstance(job.depends_on.when, list) else [job.depends_on.when]
+    if not values:
+        raise CompileError(f"Question {job.id}: depends_on.when is empty.")
+    for value in values:
+        if parent.kind == "boolean":
+            if not isinstance(value, bool) and str(value).strip().lower() not in {"yes", "no", "true", "false"}:
+                raise CompileError(f"Question {job.id}: {parent.id} is a yes/no question, so when must be true or false.")
+        elif parent.kind in {"categorical", "multilabel", "ordinal"} and str(value).strip() not in parent.labels:
+            raise CompileError(f"Question {job.id}: {value!r} is not one of the answers of {parent.id}.")
 
 
 def compile_schema(schema: dict[str, Any], strategy: Strategy) -> list[FieldJob]:
@@ -180,19 +264,18 @@ def _infer_kind(req: DecideIn) -> tuple[str, str | None]:
     if req.type == "schema":
         raise CompileError("type 'schema' needs a schema object.")
     if req.type != "auto":
-        return req.type, None
+        return _TYPE_TO_KIND.get(req.type, req.type), None
     if req.levels:
-        return "ordinal", "Routed to a rating because levels were given."
+        return "ordinal", "Read as a score because levels were given."
     if req.options and req.exclusive is False:
-        return "multilabel", "Routed to independent flags because exclusive was set to false."
+        return "multilabel", "Read as flags because options were given with exclusive=false."
     if req.options:
-        return "categorical", "Routed to a single choice because options were given."
-    question = (req.question or "").strip()
-    if question and _BOOL_START.search(question):
-        return "boolean", "Routed to yes/no because the question opens with an auxiliary verb."
-    return "open", (
-        "No closed answer set was given, so this is answered as an ordinary chat turn. "
-        "Nothing is sliced; the model generates. Add options, levels, or a schema for a closed readout."
+        return "categorical", "Read as a choice because options were given."
+    if not (req.question or "").strip():
+        raise CompileError("A question is required when no schema is given.")
+    raise CompileError(
+        "Set type (noul, choice, score, flags, quote, or open), or give options or levels. "
+        "The question's wording is not used to guess its type."
     )
 
 
@@ -249,8 +332,6 @@ def _property(name: str, spec: dict[str, Any], strategy: Strategy) -> FieldJob:
         q = str(spec.get("description") or f"Rate {name.replace('_', ' ')} from {lo} to {hi}.")
         return _ordinal_job(name, q, labels, origin=float(lo))
     if type_name == "string":
-        if _EXTRACT_HINT.search(question):
-            return FieldJob(id=name, kind="extract", question=question)
         return FieldJob(id=name, kind="generate", question=question)
     raise CompileError(f"Property {name} has unsupported type {type_name!r}.")
 

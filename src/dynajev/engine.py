@@ -1,4 +1,4 @@
-"""Compile a request, run the frozen trunk, score each head."""
+"""Compile a request to a plan, run it on the frozen trunk, fit heads from labels."""
 
 from __future__ import annotations
 
@@ -7,123 +7,95 @@ from typing import Any
 
 import numpy as np
 
-from dynajev.bind import BoundField, Node, bind_field
-from dynajev.compile import DecideIn, FieldJob, compile_request
+from dynajev.bind import bind_field
+from dynajev.compile import DecideIn, FieldJob, compile_request, order_stages
 from dynajev.errors import CompileError
-from dynajev.fit import apply_affine, apply_ridge, probabilities_from_logits, select_fit
-from dynajev.prompts import user_content
-from dynajev.score import binary_from_logits, ordinal_expectation, softmax
-from dynajev.trunk import common_prefix_len
+from dynajev.executor import combine_field, continuable, encode_branch, readout, run_plan, typed_answer
+from dynajev.fit import candidate_layers, choose_exit, select_fit
+from dynajev.heads import HeadParams, HeadStore, task_signature
+from dynajev.plan import FieldPlan, Plan
+from dynajev.trie import TrieReader
+
+_MAX_EXAMPLE_ROWS = 64
+_KIND_TO_TYPE = {"boolean": "noul", "categorical": "choice", "ordinal": "score"}
 
 
 class Dynajev:
-    def __init__(self, trunk: Any):
-        self.trunk = trunk
+    def __init__(self, backend: Any, prefix_cache: int = 0, overhead_tokens: int = 64, heads: HeadStore | None = None):
+        self.backend = backend
+        self.reader = TrieReader(backend, prefix_cache=prefix_cache, overhead_tokens=overhead_tokens)
+        self.heads = heads if heads is not None else HeadStore()
+
+    def prefix_cache_stats(self) -> dict[str, int]:
+        return self.reader.store.stats()
+
+    def compile(
+        self,
+        jobs: list[FieldJob],
+        corrections: dict[str, HeadParams] | None = None,
+        sources: dict[str, str] | None = None,
+    ) -> Plan:
+        fields = [bind_field(job, self.backend) for job in jobs]
+        for item, job in zip(fields, jobs):
+            if _fittable(item):
+                item.signature = self.signature(job)
+            correction = (corrections or {}).get(item.id)
+            if correction is not None:
+                _apply_correction(item, correction, (sources or {}).get(item.id, "fitted"))
+        by_id = {item.id: item for item in fields}
+        for item in fields:
+            parent = next((by_id[i] for i in item.include_answers if continuable(by_id[i])), None)
+            if parent is not None:
+                parent.branches[0].keep = True
+                for branch in item.branches:
+                    branch.continued_from = parent.id
+        return Plan(
+            fields=fields,
+            stages=order_stages(jobs),
+            num_layers=int(getattr(self.backend, "num_layers", 0)),
+        )
 
     def decide(self, req: DecideIn) -> dict[str, Any]:
         started = time.perf_counter()
-        context = self.trunk.sanitize(req.context) if hasattr(self.trunk, "sanitize") else req.context
+        context = self._sanitize(req.context)
         req = req.model_copy(update={"context": context})
         jobs, notes = compile_request(req)
-        if req.examples and any(job.kind in {"extract", "generate", "open"} for job in jobs):
-            notes.append("Open fields are not fitted. Only closed heads can be replaced.")
-        bound = [bind_field(job, self.trunk) for job in jobs]
-        fields, fit_payload = self._execute(req, jobs, bound)
-        for field in fields:
-            if "_ids" in field:
-                extractive = field.pop("_extractive", False)
-                text, count = self.trunk.generate(field.pop("_ids"), req.context, extractive, field.pop("_decode", "short"))
-                field["answer"] = text
-                field["generated_tokens"] = count
-                if extractive:
-                    verbatim = _normalize(text) in _normalize(req.context) if text else False
-                    field["verbatim"] = verbatim
-                    if not verbatim:
-                        field["warning"] = "The quoted text does not appear verbatim in the state."
+        corrections: dict[str, HeadParams] = {}
+        sources: dict[str, str] = {}
+        fit_payload = None
+        if req.examples:
+            if any(job.kind in {"extract", "generate", "open"} for job in jobs):
+                notes.append("Open fields are not fitted. Only closed heads can be replaced.")
+            corrections, fit_payload = self._fit(req, jobs)
+            sources = {field_id: "fitted" for field_id in corrections}
+            if req.save_heads:
+                notes.extend(self._save(corrections, fit_payload))
+        if req.use_heads:
+            stored, stored_notes = self._stored(jobs, skip=set(corrections))
+            corrections.update(stored)
+            sources.update({field_id: "stored" for field_id in stored})
+            notes.extend(stored_notes)
+        plan = self.compile(jobs, corrections, sources)
+        run = run_plan(plan, self.backend, self.reader, context)
+        if run.cached_prefix_tokens:
+            notes.append(
+                f"Prefix cache hit: the {run.cached_prefix_tokens}-token state prefill was reused from an earlier request."
+            )
         elapsed = (time.perf_counter() - started) * 1000
-        shared = fields[0].pop("_shared") if fields else 0
-        prefill = _prefill_tokens(bound, shared)
-        if getattr(self.trunk, "last_read_cached", False):
-            prefill = max(0, prefill - shared)
-            notes.append(f"Prefix cache hit: the {shared}-token state prefill was reused from an earlier request.")
-        for field in fields:
-            field.pop("_shared", None)
-            field.pop("_logits", None)
-            field.pop("_hidden", None)
-            field.pop("_ids", None)
-            field.pop("_extractive", None)
-            field.pop("_decode", None)
         return {
-            "model": getattr(self.trunk, "model_id", "unknown"),
+            "model": getattr(self.backend, "model_id", "unknown"),
             "elapsed_ms": round(elapsed, 1),
-            "hidden_size": int(getattr(self.trunk, "hidden_size", 0)),
-            "vocab_size": int(getattr(self.trunk, "vocab_size", 0)),
-            "shared_prefix_tokens": shared,
-            "prefill_tokens": prefill,
-            "generated_tokens": sum(int(field.get("generated_tokens") or 0) for field in fields),
-            "fields": fields,
-            "answers": {field["id"]: _typed_answer(field) for field in fields},
+            "hidden_size": int(getattr(self.backend, "hidden_size", 0)),
+            "vocab_size": int(getattr(self.backend, "vocab_size", 0)),
+            "shared_prefix_tokens": run.shared_prefix_tokens,
+            "prefill_tokens": run.prefill_tokens,
+            "generated_tokens": sum(int(field.get("generated_tokens") or 0) for field in run.fields),
+            "fields": run.fields,
+            "answers": {field["id"]: typed_answer(field) for field in run.fields},
             "fit": fit_payload,
+            "plan": plan.describe(run.reads, run.skipped),
             "notes": notes,
         }
-
-    def _execute(
-        self, req: DecideIn, jobs: list[FieldJob], bound: list[BoundField]
-    ) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
-        self._fill(bound, req.context)
-        fields = [self._score_field(item) for item in bound]
-        fit_payload = None
-        examples = list(req.examples or [])
-        closed = [(job, item, field) for job, item, field in zip(jobs, bound, fields) if _fittable(item)]
-        if examples and closed:
-            if len(examples) * len(closed) > 24:
-                fields_notes = (
-                    "Too many example forwards for this request, so no head was fitted. "
-                    "Ask one closed question with at most 8 labeled states."
-                )
-                fit_payload = {"chosen": "zero_shot", "note": fields_notes, "n_examples": len(examples)}
-            else:
-                fit_payload = self._fit(req, examples, closed, fields)
-        return fields, fit_payload
-
-    def _fill(self, bound: list[BoundField], context: str) -> int:
-        nodes = self._encode(bound, context)
-        readable = [node for node in nodes if node.mode != "decode"]
-        shared = 0
-        if readable:
-            # The state block tokenizes identically for every question about the
-            # same state, so its length is the reuse point for the prefix cache.
-            anchor = None
-            if getattr(self.trunk, "prefix_cache_size", 0):
-                empty = self.trunk.encode_prompt(user_content(context, ""), readable[0].assistant_prefix, readable[0].system)
-                anchor = common_prefix_len([empty, *[node.ids for node in readable]])
-            try:
-                hiddens, shared = self.trunk.read([node.ids for node in readable], anchor)
-            except TypeError:
-                hiddens, shared = self.trunk.read([node.ids for node in readable])
-            for node, hidden in zip(readable, hiddens):
-                node.hidden = hidden
-        self._score_nodes(bound, shared)
-        return shared
-
-    def _encode(self, bound: list[BoundField], context: str) -> list[Node]:
-        nodes: list[Node] = [node for item in bound for node in item.nodes]
-        for node in nodes:
-            node.ids = self.trunk.encode_prompt(user_content(context, node.block), node.assistant_prefix, node.system)
-        return nodes
-
-    def _score_nodes(self, bound: list[BoundField], shared: int) -> None:
-        for item in bound:
-            for node in item.nodes:
-                node.shared = shared  # type: ignore[attr-defined]
-                if node.mode == "prototype":
-                    node.logits = self.trunk.prototype_logits(node.hidden, node.pieces)
-                    node.allowed_mass = None
-                elif node.mode == "classes":
-                    logits, mass = self.trunk.class_logits(node.hidden, node.groups)
-                    node.logits = logits
-                    node.allowed_mass = mass
-        self._score_margin_nodes(bound)
 
     def decide_batch(
         self,
@@ -135,30 +107,23 @@ class Dynajev:
     ) -> dict[str, Any]:
         """Many states, one question set, closed types only.
 
-        Two ways to run it, and they win on different hardware:
+        - "dense": every (state, branch) prompt is a row of a padded batch, one
+          forward per chunk. Nothing is reused within a state, but the forward is
+          a rectangle, which is what a GPU wants.
+        - "shared": one state at a time, each state's branches read through the
+          same prefix sharing as /api/decide. Fewer tokens, sequential. Wins on CPU.
 
-        - "dense": every (state, question, branch) prompt is a row of a padded
-          batch, one forward per chunk. About twice the tokens of "shared" because
-          nothing is reused within a state, but the forward is a rectangle, which
-          is what a GPU wants.
-        - "shared": one state at a time, the state prefilled once and its fields
-          branched off that cache in one batched forward. Fewer tokens, sequential.
-          Wins on CPU, where throughput does not improve with batch size.
-
-        "auto" picks dense on CUDA and shared on CPU. Measured numbers are in the README.
+        "auto" picks dense on CUDA and shared on CPU.
         """
 
-        if mode == "auto":
-            mode = "dense" if str(getattr(self.trunk, "device", "cpu")).startswith("cuda") else "shared"
-        if mode not in {"dense", "shared"}:
+        if mode not in {"auto", "dense", "shared"}:
             raise CompileError("mode must be auto, dense, or shared.")
-
         started = time.perf_counter()
         if not contexts:
             raise CompileError("contexts must contain at least one state.")
         if len(contexts) > 1024:
             raise CompileError("At most 1024 states per batch call.")
-        clean = [self.trunk.sanitize(c) if hasattr(self.trunk, "sanitize") else c for c in contexts]
+        clean = [self._sanitize(c) for c in contexts]
         probe = DecideIn.model_validate({"context": clean[0], "questions": questions})
         jobs, notes = compile_request(probe)
         open_kinds = [job.id for job in jobs if job.kind in {"extract", "generate", "open"}]
@@ -167,45 +132,48 @@ class Dynajev:
                 f"Batch decisions are closed readouts only; {', '.join(open_kinds)} would need generation. "
                 "Use /api/decide for quote and open questions."
             )
-        per_state: list[list[BoundField]] = []
-        readable: list[Node] = []
-        for context in clean:
-            bound = [bind_field(job, self.trunk) for job in jobs]
-            nodes = self._encode(bound, context)
-            readable.extend(node for node in nodes if node.mode != "decode")
-            per_state.append(bound)
+        staged = any(job.depends_on is not None or job.include_answers for job in jobs)
+        if mode == "auto":
+            cuda = str(getattr(self.backend, "device", "cpu")).startswith("cuda")
+            mode = "dense" if cuda and not staged else "shared"
+        if mode == "dense" and staged:
+            raise CompileError("Dependent questions need the shared mode, which runs them in stages.")
+        plans = [self.compile(jobs) for _ in clean]
         prefill = 0
-        if mode == "dense":
-            hiddens = self.trunk.read_dense([node.ids for node in readable], chunk_rows)
-            for node, hidden in zip(readable, hiddens):
-                node.hidden = hidden
-            prefill = sum(len(node.ids or []) for node in readable)
-        else:
-            for bound in per_state:
-                nodes = [node for item in bound for node in item.nodes if node.mode != "decode"]
-                hiddens, shared = self.trunk.read([node.ids for node in nodes])
-                for node, hidden in zip(nodes, hiddens):
-                    node.hidden = hidden
-                prefill += _prefill_tokens(bound, shared)
+        rows = 0
         results = []
-        for bound in per_state:
-            self._score_nodes(bound, 0)
-            fields = [self._score_field(item) for item in bound]
-            for field in fields:
-                for key in ("_shared", "_logits", "_hidden", "_ids", "_extractive", "_decode"):
-                    field.pop(key, None)
-            entry: dict[str, Any] = {"answers": {field["id"]: _typed_answer(field) for field in fields}}
-            if trace:
-                entry["fields"] = fields
-            results.append(entry)
+        if mode == "dense":
+            branches = []
+            for plan, context in zip(plans, clean):
+                for item in plan.fields:
+                    for branch in item.branches:
+                        branch.tokens = encode_branch(self.backend, branch, context)
+                        branches.append(branch)
+            hiddens = self.backend.read_dense([b.tokens for b in branches], chunk_rows)
+            by_branch = {id(b): h for b, h in zip(branches, hiddens)}
+            prefill = sum(len(b.tokens or []) for b in branches)
+            rows = len(branches)
+            for plan in plans:
+                fields = []
+                for item in plan.fields:
+                    lookup = {b.id: by_branch[id(b)] for b in item.branches}
+                    reads = [readout(self.backend, read, lookup[read.branch]) for read in item.reads]
+                    fields.append(combine_field(item, reads, self.backend))
+                results.append(_batch_entry(fields, trace))
+        else:
+            for plan, context in zip(plans, clean):
+                run = run_plan(plan, self.backend, self.reader, context)
+                prefill += run.prefill_tokens
+                rows += sum(len(item.branches) for item in plan.fields)
+                results.append(_batch_entry(run.fields, trace))
         elapsed = (time.perf_counter() - started) * 1000
         decisions = len(clean) * len(jobs)
         return {
-            "model": getattr(self.trunk, "model_id", "unknown"),
+            "model": getattr(self.backend, "model_id", "unknown"),
             "states": len(clean),
             "questions": len(jobs),
             "decisions": decisions,
-            "rows": len(readable),
+            "rows": rows,
             "mode": mode,
             "chunk_rows": chunk_rows if mode == "dense" else None,
             "elapsed_ms": round(elapsed, 1),
@@ -217,200 +185,88 @@ class Dynajev:
             + [
                 "Batched dense: one padded forward per chunk of rows, nothing shared between rows, nothing generated."
                 if mode == "dense"
-                else "Batched shared: each state prefilled once, its fields branched in one forward, nothing generated."
+                else "Batched shared: each state prefilled once, its branches read off that prefill, nothing generated."
             ],
         }
 
-    def _score_margin_nodes(self, bound: list[BoundField]) -> None:
-        """Yes/no branches reuse the boolean verbalizer, scored per branch."""
+    def signature(self, job: FieldJob) -> str:
+        return task_signature(
+            job.qtype or _KIND_TO_TYPE.get(job.kind, job.kind),
+            job.question,
+            job.labels,
+            str(getattr(self.backend, "model_id", "unknown")),
+            job.strategy,
+            job.criteria,
+        )
 
-        for item in bound:
-            if item.head not in {"option_margin", "multilabel_margin"}:
+    def fit_heads(self, questions: dict[str, Any], examples: list[Any]) -> dict[str, Any]:
+        """Fit heads for a question set from labeled states and keep them in the store."""
+
+        req = DecideIn.model_validate({"context": "", "questions": questions, "examples": examples})
+        jobs, notes = compile_request(req)
+        corrections, fit_payload = self._fit(req, jobs)
+        if fit_payload is None:
+            raise CompileError("No closed single-branch question to fit (noul, choice, or score).")
+        notes.extend(self._save(corrections, fit_payload))
+        return {"heads": [head.summary() for head in corrections.values()], "fit": fit_payload, "notes": notes}
+
+    def _save(self, corrections: dict[str, HeadParams], fit_payload: dict[str, Any] | None) -> list[str]:
+        notes = []
+        records = (fit_payload or {}).get("fields") or ([fit_payload] if fit_payload else [])
+        for record in records:
+            head = corrections.get(record.get("field", ""))
+            if head is None:
+                record["saved"] = False
                 continue
-            # The boolean binder already checked Yes/No. Rebuild groups from a sibling call
-            # stored on the first boolean-capable encoder via class names no/yes.
-            probe = bind_field(FieldJob(id=item.id, kind="boolean", question="probe"), self.trunk)
-            groups = probe.nodes[0].groups
-            names = probe.nodes[0].class_names
-            for node in item.nodes:
-                node.groups = groups
-                node.class_names = names
-                logits, mass = self.trunk.class_logits(node.hidden, groups)
-                node.logits = logits
-                node.allowed_mass = mass
+            self.heads.put(head)
+            record["saved"] = True
+            record["signature"] = head.signature
+            notes.append(f"Saved the fitted head for {head.qtype} field {record['field']} as {head.signature}.")
+        if records and not corrections:
+            notes.append("Nothing was saved: the readout head stood for every field.")
+        return notes
 
-    def _score_field(self, item: BoundField) -> dict[str, Any]:
-        shared = getattr(item.nodes[0], "shared", 0) if item.nodes else 0
-        if item.head in {"extractive_decode", "short_decode", "chat_decode"}:
-            return self._decode_field(item, shared)
-        if item.head == "multilabel_margin":
-            return self._multilabel_field(item, shared)
-        if item.head == "option_margin":
-            return self._margin_field(item, shared)
-        if item.head == "ordinal_expectation":
-            return self._ordinal_field(item, shared)
-        return self._softmax_field(item, shared)
+    def _stored(self, jobs: list[FieldJob], skip: set[str]) -> tuple[dict[str, HeadParams], list[str]]:
+        found: dict[str, HeadParams] = {}
+        notes = []
+        num_layers = int(getattr(self.backend, "num_layers", 0) or 0)
+        for job in jobs:
+            if job.id in skip or job.kind not in {"boolean", "categorical", "ordinal"} or job.strategy in {"margin", "prototype"} or job.criteria:
+                continue
+            head = self.heads.get(self.signature(job))
+            if head is None or head.labels != list(job.labels):
+                continue
+            if head.layer is not None and num_layers and head.layer > num_layers:
+                continue
+            found[job.id] = head
+            where = f", exit after layer {head.layer} of {num_layers}" if head.layer is not None else ""
+            notes.append(f"Field {job.id} used stored head {head.signature} ({head.chosen.replace('_', ' ')}{where}).")
+        return found, notes
 
-    def _softmax_field(self, item: BoundField, shared: int) -> dict[str, Any]:
-        node = item.nodes[0]
-        logits = list(node.logits or [])
-        probabilities = softmax(logits)
-        pairs = list(zip(item.labels, probabilities))
-        winner = max(pairs, key=lambda pair: pair[1])[0] if pairs else None
-        payload = self._base(item, shared, logits, probabilities, winner)
-        if item.head == "binary_margin":
-            yes = probabilities[item.labels.index("yes")]
-            payload["answer"] = bool(yes >= 0.5)
-            payload["confidence"] = round(max(yes, 1 - yes), 4)
-            payload["probabilities"] = {"no": round(probabilities[0], 4), "yes": round(probabilities[1], 4)}
-        if item.head == "prototype":
-            payload["rows_scored"] = sum(len(piece) for piece in (node.pieces or []))
-            payload["allowed_mass"] = None
-            payload["weak_reading"] = False
-            payload["warning"] = None
-        return payload
+    def _sanitize(self, context: str) -> str:
+        return self.backend.sanitize(context) if hasattr(self.backend, "sanitize") else context
 
-    def _ordinal_field(self, item: BoundField, shared: int) -> dict[str, Any]:
-        node = item.nodes[0]
-        logits = list(node.logits or [])
-        probabilities = softmax(logits)
-        pairs = list(zip(item.labels, probabilities))
-        winner = max(pairs, key=lambda pair: pair[1])[0]
-        score = ordinal_expectation(probabilities, origin=item.origin)
-        payload = self._base(item, shared, logits, probabilities, winner)
-        payload["score"] = round(score, 4)
-        return payload
-
-    def _margin_field(self, item: BoundField, shared: int) -> dict[str, Any]:
-        margins = []
-        masses = []
-        for node in item.nodes:
-            logits = list(node.logits or [0.0, 0.0])
-            margins.append(logits[1] - logits[0])
-            if node.allowed_mass is not None:
-                masses.append(node.allowed_mass)
-        probabilities = softmax(margins)
-        pairs = list(zip(item.labels, probabilities))
-        winner = max(pairs, key=lambda pair: pair[1])[0]
-        payload = self._base(item, shared, margins, probabilities, winner)
-        mean_mass = sum(masses) / len(masses) if masses else None
-        payload["allowed_mass"] = None if mean_mass is None else round(mean_mass, 4)
-        payload["weak_reading"] = mean_mass is not None and mean_mass < 0.05
-        payload["warning"] = _weak_warning(mean_mass)
-        payload["rows_scored"] = sum(len(group) for node in item.nodes for group in node.groups)
-        payload["sequences"] = len(item.nodes)
-        return payload
-
-    def _multilabel_field(self, item: BoundField, shared: int) -> dict[str, Any]:
-        probabilities: dict[str, float] = {}
-        masses = []
-        for label, node in zip(item.labels, item.nodes):
-            logits = list(node.logits or [0.0, 0.0])
-            probabilities[label] = binary_from_logits(logits[0], logits[1])
-            if node.allowed_mass is not None:
-                masses.append(node.allowed_mass)
-        chosen = [label for label, prob in probabilities.items() if prob >= 0.5]
-        confidence = sum(abs(p - 0.5) * 2 for p in probabilities.values()) / max(len(probabilities), 1)
-        return {
-            "id": item.id,
-            "head": item.head,
-            "kind": item.kind,
-            "reason": item.reason,
-            "answer": chosen,
-            "confidence": round(confidence, 4),
-            "probabilities": {label: round(prob, 4) for label, prob in probabilities.items()},
-            "score": None,
-            "letters": None,
-            "allowed_mass": round(sum(masses) / len(masses), 4) if masses else None,
-            "rows_scored": sum(len(group) for node in item.nodes for group in node.groups),
-            "sequences": len(item.nodes),
-            "generated_tokens": 0,
-            "prompt": item.prompt_preview,
-            "logits": {label: round(item.nodes[i].logits[1] - item.nodes[i].logits[0], 4) for i, label in enumerate(item.labels)},
-            "weak_reading": bool(masses) and (sum(masses) / len(masses) < 0.05),
-            "warning": _weak_warning(sum(masses) / len(masses) if masses else None),
-            "_shared": shared,
-            "_logits": None,
-            "_hidden": None,
-        }
-
-    def _decode_field(self, item: BoundField, shared: int) -> dict[str, Any]:
-        node = item.nodes[0]
-        return {
-            "id": item.id,
-            "head": item.head,
-            "kind": item.kind,
-            "reason": item.reason,
-            "answer": None,
-            "confidence": None,
-            "probabilities": None,
-            "score": None,
-            "letters": None,
-            "allowed_mass": None,
-            "rows_scored": 0,
-            "sequences": 1,
-            "generated_tokens": 0,
-            "prompt": item.prompt_preview,
-            "logits": None,
-            "weak_reading": False,
-            "warning": None,
-            "_shared": shared,
-            "_logits": None,
-            "_hidden": None,
-            "_extractive": node.extractive,
-            "_decode": node.decode,
-            "_ids": node.ids,
-        }
-
-    def _base(
-        self,
-        item: BoundField,
-        shared: int,
-        logits: list[float],
-        probabilities: list[float],
-        winner: str | None,
-    ) -> dict[str, Any]:
-        mass = item.nodes[0].allowed_mass
-        hidden = self.trunk.as_vector(item.nodes[0].hidden) if item.nodes[0].hidden is not None else None
-        return {
-            "id": item.id,
-            "head": item.head,
-            "kind": item.kind,
-            "reason": item.reason,
-            "answer": winner,
-            "confidence": round(max(probabilities), 4) if probabilities else None,
-            "probabilities": {label: round(prob, 4) for label, prob in zip(item.labels, probabilities)},
-            "score": None,
-            "letters": item.letters,
-            "allowed_mass": None if mass is None else round(mass, 4),
-            "rows_scored": sum(len(group) for group in item.nodes[0].groups) if item.nodes[0].groups else 0,
-            "sequences": 1,
-            "generated_tokens": 0,
-            "prompt": item.prompt_preview,
-            "logits": {label: round(value, 4) for label, value in zip(item.labels, logits)},
-            "weak_reading": mass is not None and mass < 0.05,
-            "warning": _weak_warning(mass),
-            "_shared": shared,
-            "_logits": logits,
-            "_hidden": hidden,
-        }
-
-    def _fit(
-        self,
-        req: DecideIn,
-        examples: list[Any],
-        closed: list[tuple[FieldJob, BoundField, dict[str, Any]]],
-        fields: list[dict[str, Any]],
-    ) -> dict[str, Any]:
-        # One fit record per closed field. The response keeps a single object when
-        # there is one field, and a list under "fields" when a schema is fitted.
+    def _fit(self, req: DecideIn, jobs: list[FieldJob]) -> tuple[dict[str, HeadParams], dict[str, Any] | None]:
+        examples = list(req.examples or [])
+        closed = [(job, item) for job in jobs if _fittable(item := bind_field(job, self.backend))]
+        if not closed:
+            return {}, None
+        if len(examples) * len(closed) > _MAX_EXAMPLE_ROWS:
+            return {}, {
+                "chosen": "zero_shot",
+                "note": "Too many example forwards for this request, so no head was fitted. "
+                f"Keep labeled states times closed questions at or under {_MAX_EXAMPLE_ROWS}.",
+                "n_examples": len(examples),
+            }
+        corrections: dict[str, HeadParams] = {}
         records = []
-        for job, _item, field in closed:
-            hidden_rows = []
-            logit_rows = []
-            label_index = []
+        single = len(closed) == 1
+        num_layers = int(getattr(self.backend, "num_layers", 0) or 0)
+        layers = tuple(candidate_layers(num_layers)) if num_layers else None
+        for job, item in closed:
+            label_index, sequences = [], []
             skipped = 0
-            single = len(closed) == 1
+            branch = item.branches[0]
             for example in examples:
                 raw = _example_raw(example, job.id, single)
                 if raw is None:
@@ -421,17 +277,9 @@ class Dynajev:
                 except CompileError:
                     skipped += 1
                     continue
-                bound = [bind_field(job, self.trunk)]
-                example_context = self.trunk.sanitize(example.context) if hasattr(self.trunk, "sanitize") else example.context
-                self._fill(bound, example_context)
-                scored = self._score_field(bound[0])
-                if scored.get("_hidden") is None or scored.get("_logits") is None:
-                    skipped += 1
-                    continue
-                hidden_rows.append(scored["_hidden"])
-                logit_rows.append(scored["_logits"])
+                sequences.append(encode_branch(self.backend, branch, self._sanitize(example.context)))
                 label_index.append(index)
-            if len(label_index) < 3 or field.get("_hidden") is None or field.get("_logits") is None:
+            if len(label_index) < 3:
                 records.append(
                     {
                         "field": job.id,
@@ -441,131 +289,94 @@ class Dynajev:
                     }
                 )
                 continue
-            decision = select_fit(np.array(hidden_rows), np.array(logit_rows, dtype=np.float64), np.array(label_index))
-            self._apply_fit(field, job, decision)
-            records.append(
-                {
-                    "field": job.id,
-                    "chosen": decision.chosen,
-                    "temperature": round(decision.temperature, 4),
-                    "bias": None
-                    if decision.bias is None
-                    else {label: round(float(v), 4) for label, v in zip(job.labels, decision.bias)},
-                    "n_examples": len(label_index),
-                    "skipped": skipped,
-                    "zero_shot_loo_nll": round(decision.zero_shot_loo_nll, 4),
-                    "affine_loo_nll": round(decision.affine_loo_nll, 4),
-                    "ridge_loo_nll": None if decision.ridge_loo_nll is None else round(decision.ridge_loo_nll, 4),
-                    "zero_shot_loo_accuracy": round(decision.zero_shot_loo_accuracy, 4),
-                    "affine_loo_accuracy": round(decision.affine_loo_accuracy, 4),
-                    "ridge_loo_accuracy": None
-                    if decision.ridge_loo_accuracy is None
-                    else round(decision.ridge_loo_accuracy, 4),
-                    "note": decision.note,
-                }
+            taps = self.backend.prefill_rows(None, sequences, [layers] * len(sequences) if layers else None, 8)
+            final = [row[num_layers] if num_layers else next(iter(row.values())) for row in taps]
+            outs = [readout(self.backend, item.reads[0], hidden) for hidden in final]
+            labels = np.array(label_index)
+            decision = select_fit(
+                np.array([self.backend.as_vector(h) for h in final]), np.array([o.logits for o in outs], dtype=np.float64), labels
             )
+            record = _fit_record(job, decision, len(label_index), skipped)
+            record["fit_tokens"] = sum(len(seq) for seq in sequences)
+            correction = HeadParams.from_decision(decision, job.labels) if decision.chosen != "zero_shot" else None
+            if layers and len(layers) > 1:
+                per_layer = {
+                    k: np.array([self.backend.as_vector(row[k]) for row in taps]) for k in layers if k < num_layers
+                }
+                exit_choice = choose_exit(per_layer, labels, len(job.labels), decision, num_layers)
+                record["num_layers"] = num_layers
+                record["exit_layer"] = exit_choice.layer
+                record["layer_scan"] = exit_choice.scan
+                record["full_depth_loo"] = {
+                    "accuracy": round(exit_choice.full_accuracy, 4),
+                    "nll": round(exit_choice.full_nll, 4),
+                }
+                if exit_choice.layer is not None and exit_choice.probe is not None:
+                    probe = exit_choice.probe
+                    correction = HeadParams(
+                        chosen="ridge_probe",
+                        layer=exit_choice.layer,
+                        weight=probe.weight,
+                        ridge_bias=probe.bias,
+                        mu=probe.mu,
+                        sd=probe.sd,
+                        scale=probe.scale,
+                        note=exit_choice.note,
+                        labels=list(job.labels),
+                    )
+                    record["chosen"] = "ridge_probe"
+                    record["note"] = exit_choice.note
+            if correction is not None:
+                correction.signature = self.signature(job)
+                correction.qtype = job.qtype or _KIND_TO_TYPE.get(job.kind, job.kind)
+                correction.instructions = job.question
+                correction.model_id = str(getattr(self.backend, "model_id", "unknown"))
+                correction.n_examples = len(label_index)
+                correction.metrics = {k: v for k, v in record.items() if k not in {"field", "note", "bias"}}
+                corrections[job.id] = correction
+            records.append(record)
         if len(records) == 1:
-            return records[0]
-        return {"fields": records, "chosen": "per_field", "note": "Each closed field was fitted on its own."}
-
-    def _apply_fit(self, field: dict[str, Any], job: FieldJob, decision: Any) -> None:
-        labels = job.labels
-        if decision.chosen == "ridge_probe":
-            logits = apply_ridge(np.array(field["_hidden"], dtype=np.float64), decision)
-            field["head"] = "ridge_probe"
-            field["reason"] = decision.note
-        elif decision.chosen == "affine":
-            logits = apply_affine(list(field["_logits"]), decision.temperature, decision.bias)
-            field["head"] = f"{field['head']}+affine"
-            field["reason"] = decision.note
-        else:
-            return
-        probabilities = probabilities_from_logits(logits)
-        field["probabilities"] = {label: round(prob, 4) for label, prob in zip(labels, probabilities)}
-        field["logits"] = {label: round(value, 4) for label, value in zip(labels, logits)}
-        winner = labels[int(np.argmax(probabilities))]
-        if job.kind == "boolean":
-            yes = probabilities[labels.index("yes")]
-            field["answer"] = bool(yes >= 0.5)
-            field["confidence"] = round(max(yes, 1 - yes), 4)
-        elif job.kind == "ordinal":
-            field["answer"] = winner
-            field["confidence"] = round(max(probabilities), 4)
-            field["score"] = round(ordinal_expectation(probabilities, origin=job.origin), 4)
-        else:
-            field["answer"] = winner
-            field["confidence"] = round(max(probabilities), 4)
-
-_KIND_TO_TYPE = {
-    "boolean": "noul",
-    "categorical": "choice",
-    "ordinal": "score",
-    "multilabel": "flags",
-    "extract": "quote",
-    "open": "open",
-    "generate": "open",
-}
+            return corrections, records[0]
+        return corrections, {"fields": records, "chosen": "per_field", "note": "Each closed field was fitted on its own."}
 
 
-def _typed_answer(field: dict[str, Any]) -> dict[str, Any]:
-    """The compact, typed view of one field, keyed the way the question was asked."""
-
-    kind = field.get("kind")
-    qtype = _KIND_TO_TYPE.get(kind, "open")
-    out: dict[str, Any] = {"type": qtype}
-    probabilities = field.get("probabilities")
-    if qtype == "noul":
-        out["noul"] = None if not probabilities else probabilities.get("yes")
-    elif qtype == "choice":
-        out["choice"] = field.get("answer")
-        out["probabilities"] = probabilities
-        out["confidence"] = field.get("confidence")
-    elif qtype == "score":
-        out["level"] = field.get("answer")
-        out["score"] = field.get("score")
-        out["probabilities"] = probabilities
-        out["confidence"] = field.get("confidence")
-    elif qtype == "flags":
-        out["flags"] = field.get("answer")
-        out["probabilities"] = probabilities
-    elif qtype == "quote":
-        out["quote"] = field.get("answer")
-        out["verbatim"] = field.get("verbatim")
-    else:
-        out["text"] = field.get("answer")
-    if field.get("weak_reading"):
-        out["weak_reading"] = True
-    return out
+def _apply_correction(item: FieldPlan, correction: HeadParams, source: str) -> None:
+    if item.combine is None or correction.chosen == "readout":
+        return
+    item.combine.correction = correction
+    item.head_source = source  # type: ignore[assignment]
+    if correction.chosen == "ridge_probe":
+        read = item.reads[0]
+        read.op = "hidden"
+        read.groups = []
+        read.layer = correction.layer
+        for branch in item.branches:
+            branch.depth = correction.layer
 
 
-def _normalize(text: str) -> str:
-    return " ".join(text.lower().split())
+def _fit_record(job: FieldJob, decision: Any, n: int, skipped: int) -> dict[str, Any]:
+    return {
+        "field": job.id,
+        "chosen": decision.chosen,
+        "temperature": round(decision.temperature, 4),
+        "bias": None if decision.bias is None else {label: round(float(v), 4) for label, v in zip(job.labels, decision.bias)},
+        "n_examples": n,
+        "skipped": skipped,
+        "zero_shot_loo_nll": round(decision.zero_shot_loo_nll, 4),
+        "affine_loo_nll": round(decision.affine_loo_nll, 4),
+        "ridge_loo_nll": None if decision.ridge_loo_nll is None else round(decision.ridge_loo_nll, 4),
+        "zero_shot_loo_accuracy": round(decision.zero_shot_loo_accuracy, 4),
+        "affine_loo_accuracy": round(decision.affine_loo_accuracy, 4),
+        "ridge_loo_accuracy": None if decision.ridge_loo_accuracy is None else round(decision.ridge_loo_accuracy, 4),
+        "note": decision.note,
+    }
 
 
-def _prefill_tokens(bound: list[BoundField], shared: int) -> int:
-    """Tokens the trunk actually processed: the shared prefix once, then each branch's suffix.
-
-    Decode nodes are forwarded in full by generate(), so they count whole.
-    """
-
-    nodes = [node for item in bound for node in item.nodes if node.ids is not None]
-    readable = [node for node in nodes if node.mode != "decode"]
-    decoded = [node for node in nodes if node.mode == "decode"]
-    total = sum(len(node.ids or []) for node in decoded)
-    if not readable:
-        return total
-    if shared <= 0 or len(readable) == 1:
-        return total + sum(len(node.ids or []) for node in readable)
-    return total + shared + sum(len(node.ids or []) - shared for node in readable)
-
-
-def _weak_warning(mass: float | None) -> str | None:
-    if mass is None or mass >= 0.05:
-        return None
-    return (
-        "Less than 5% of the next-token distribution sat on the allowed answers. "
-        "The probabilities are renormalized over that thin slice."
-    )
+def _batch_entry(fields: list[dict[str, Any]], trace: bool) -> dict[str, Any]:
+    entry: dict[str, Any] = {"answers": {field["id"]: typed_answer(field) for field in fields}}
+    if trace:
+        entry["fields"] = fields
+    return entry
 
 
 def _example_raw(example: Any, field_id: str, single: bool) -> Any:
@@ -578,8 +389,13 @@ def _example_raw(example: Any, field_id: str, single: bool) -> Any:
     return None
 
 
-def _fittable(item: BoundField) -> bool:
-    return item.kind in {"boolean", "categorical", "ordinal"} and item.head not in {"option_margin", "prototype"}
+def _fittable(item: FieldPlan) -> bool:
+    return (
+        item.kind in {"boolean", "categorical", "ordinal"}
+        and len(item.branches) == 1
+        and bool(item.reads)
+        and item.reads[0].op == "rows"
+    )
 
 
 def _label_index(job: FieldJob, raw: Any) -> int:

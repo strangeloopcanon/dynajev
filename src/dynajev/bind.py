@@ -1,17 +1,16 @@
-"""Bind field jobs to a tokenizer: pick the actual head and its token rows."""
+"""Lower field jobs to plan nodes: which head, which branches, which token rows."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from typing import Protocol
 
 from dynajev.compile import FieldJob
 from dynajev.errors import CompileError
+from dynajev.plan import Branch, Combine, Decode, FieldPlan, Read
 from dynajev.prompts import (
-    ASSISTANT_PREFIX,
     OPEN_SYSTEM,
-    SYSTEM,
     boolean_block,
+    criterion_block,
     extract_block,
     generate_block,
     letter_block,
@@ -26,6 +25,16 @@ LETTERS = list("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwx")
 YES_FORMS = ("Yes", "yes")
 NO_FORMS = ("No", "no")
 
+_KIND_TO_TYPE = {
+    "boolean": "noul",
+    "categorical": "choice",
+    "ordinal": "score",
+    "multilabel": "flags",
+    "extract": "quote",
+    "open": "open",
+    "generate": "open",
+}
+
 
 class Encoder(Protocol):
     def token_ids(self, text: str) -> list[int]: ...
@@ -33,44 +42,7 @@ class Encoder(Protocol):
     def single_token(self, text: str) -> int | None: ...
 
 
-@dataclass
-class Node:
-    """One answer boundary. A field may own several (one per option or flag)."""
-
-    field_id: str
-    block: str
-    assistant_prefix: str = ASSISTANT_PREFIX
-    system: str = SYSTEM
-    # For a closed softmax/margin node: token ids per class, class order fixed.
-    groups: list[list[int]] = field(default_factory=list)
-    class_names: list[str] = field(default_factory=list)
-    # Prototype head: token pieces per label, same order as class_names.
-    pieces: list[list[int]] | None = None
-    mode: str = "classes"  # classes | prototype | decode
-    extractive: bool = False
-    # decode nodes: "short" stops at a phrase boundary, "open" runs to end of turn
-    decode: str = "short"
-    label: str | None = None
-    ids: list[int] | None = None
-    hidden: object | None = None
-    logits: list[float] | None = None
-    allowed_mass: float | None = None
-
-
-@dataclass
-class BoundField:
-    id: str
-    kind: str
-    head: str
-    reason: str
-    labels: list[str]
-    nodes: list[Node]
-    letters: dict[str, str] | None = None
-    origin: float = 0.0
-    prompt_preview: str = ""
-
-
-def bind_field(job: FieldJob, enc: Encoder) -> BoundField:
+def bind_field(job: FieldJob, enc: Encoder) -> FieldPlan:
     if job.kind == "boolean":
         return _boolean(job, enc)
     if job.kind == "categorical":
@@ -80,127 +52,131 @@ def bind_field(job: FieldJob, enc: Encoder) -> BoundField:
     if job.kind == "multilabel":
         return _multilabel(job, enc)
     if job.kind == "extract":
-        node = Node(
-            field_id=job.id,
-            block=extract_block(job.question),
-            mode="decode",
-            extractive=True,
-        )
-        return BoundField(
-            id=job.id,
-            kind=job.kind,
-            head="extractive_decode",
-            reason=(
-                "Open string marked as a quote. No closed row exists, so only this field decodes, briefly, "
-                "and the result is checked against the state: verbatim or flagged."
-            ),
-            labels=[],
-            nodes=[node],
-            prompt_preview=node.block,
+        return _decode_field(
+            job,
+            "extractive_decode",
+            "Open string marked as a quote. No closed row exists, so only this field decodes, briefly, "
+            "and the result is checked against the state: verbatim or flagged.",
+            Branch(id=job.id, field=job.id, block=extract_block(job.question)),
+            Decode(branch=job.id, mode="short", extractive=True),
         )
     if job.kind == "generate":
-        node = Node(field_id=job.id, block=generate_block(job.question), mode="decode", extractive=False)
-        return BoundField(
-            id=job.id,
-            kind=job.kind,
-            head="short_decode",
-            reason=(
-                "Open string. A closed head would invent a label the question did not allow, "
-                "so only this field generates, capped at a short phrase."
-            ),
-            labels=[],
-            nodes=[node],
-            prompt_preview=node.block,
+        return _decode_field(
+            job,
+            "short_decode",
+            "Open string. A closed head would invent a label the question did not allow, "
+            "so only this field generates, capped at a short phrase.",
+            Branch(id=job.id, field=job.id, block=generate_block(job.question)),
+            Decode(branch=job.id, mode="short"),
         )
     if job.kind == "open":
-        node = Node(
-            field_id=job.id,
-            block=open_block(job.question),
-            assistant_prefix="",
-            system=OPEN_SYSTEM,
-            mode="decode",
-            extractive=False,
-            decode="open",
-        )
-        return BoundField(
-            id=job.id,
-            kind=job.kind,
-            head="chat_decode",
-            reason=(
-                "Open question with no answer set. There are no rows to read, so this is an ordinary chat "
-                "completion: the model generates until it ends its turn. It pays full decoding cost."
-            ),
-            labels=[],
-            nodes=[node],
-            prompt_preview=node.block,
+        return _decode_field(
+            job,
+            "chat_decode",
+            "Open question with no answer set. There are no rows to read, so this is an ordinary chat "
+            "completion: the model generates until it ends its turn. It pays full decoding cost.",
+            Branch(id=job.id, field=job.id, block=open_block(job.question), assistant_prefix="", system=OPEN_SYSTEM),
+            Decode(branch=job.id, mode="open"),
         )
     raise CompileError(f"Unknown field kind {job.kind}.")
 
 
-def _boolean(job: FieldJob, enc: Encoder) -> BoundField:
+def yes_no_groups(enc: Encoder) -> list[list[int]]:
     yes = _forms(enc, YES_FORMS)
     no = _forms(enc, NO_FORMS)
     if not yes or not no:
         raise CompileError("This tokenizer has no single token for Yes and No, so the boolean head cannot be sliced.")
     if set(yes) & set(no):
         raise CompileError("Yes and No collide in this tokenizer.")
-    node = Node(
-        field_id=job.id,
-        block=boolean_block(job.question),
-        groups=[no, yes],
-        class_names=["no", "yes"],
-    )
-    return BoundField(
+    return [no, yes]
+
+
+def _plan(job: FieldJob, head: str, reason: str, branches: list[Branch], **extra) -> FieldPlan:
+    return FieldPlan(
         id=job.id,
-        kind="boolean",
-        head="binary_margin",
-        reason=(
-            "Yes/no is a two-row head: log-sum-exp of the Yes tokens minus log-sum-exp of the No tokens, "
-            "then a sigmoid. The rows are taken from the frozen unembedding. Nothing is generated."
-        ),
-        labels=["no", "yes"],
-        nodes=[node],
-        prompt_preview=node.block,
+        qtype=job.qtype or _KIND_TO_TYPE.get(job.kind, "open"),
+        kind=job.kind,
+        head=head,
+        reason=reason,
+        labels=list(job.labels),
+        branches=branches,
+        question=job.question,
+        depends_on=job.depends_on,
+        include_answers=list(job.include_answers),
+        **extra,
     )
 
 
-def _categorical(job: FieldJob, enc: Encoder) -> BoundField:
+def _decode_field(job: FieldJob, head: str, reason: str, branch: Branch, decode: Decode) -> FieldPlan:
+    return _plan(job, head, reason, [branch], decode=decode)
+
+
+def _boolean(job: FieldJob, enc: Encoder) -> FieldPlan:
+    groups = yes_no_groups(enc)
+    if job.criteria:
+        return _criteria(job, groups)
+    branch = Branch(id=job.id, field=job.id, block=boolean_block(job.question))
+    return _plan(
+        job,
+        "binary_margin",
+        "Yes/no is a two-row head: log-sum-exp of the Yes tokens minus log-sum-exp of the No tokens, "
+        "then a sigmoid. The rows are taken from the frozen unembedding. Nothing is generated.",
+        [branch],
+        reads=[Read(branch=branch.id, groups=groups)],
+        combine=Combine(op="sigmoid", labels=["no", "yes"]),
+        answer_tokens=["No", "Yes"],
+    )
+
+
+def _criteria(job: FieldJob, groups: list[list[int]]) -> FieldPlan:
+    criteria = job.criteria or {}
+    branches = [
+        Branch(id=f"{job.id}/{side}", field=job.id, block=criterion_block(job.question, criteria[side]), label=side)
+        for side in ("true", "false")
+        if side in criteria
+    ]
+    return _plan(
+        job,
+        "criteria_judgment",
+        "Each criterion is judged on its own branch as a yes/no margin, without seeing the other. "
+        "The probability is the sigmoid of the true margin minus the false margin; the separate judgments are "
+        "reported too, so 'both fit' or 'neither fits' shows up instead of being hidden in one margin.",
+        branches,
+        reads=[Read(branch=b.id, groups=groups) for b in branches],
+        combine=Combine(op="criteria", labels=["no", "yes"]),
+    )
+
+
+def _categorical(job: FieldJob, enc: Encoder) -> FieldPlan:
     strategy = job.strategy
     direct = _direct_groups(enc, job.labels)
     if strategy == "margin":
-        return _option_margins(job)
+        return _option_margins(job, enc)
     if strategy == "prototype":
         return _prototype(job, enc)
     if strategy == "slice" or (strategy == "auto" and direct is not None):
         if direct is None:
-            bound = _letters(job, enc)
-            bound.reason = (
+            plan = _letters(job, enc)
+            plan.reason = (
                 "A direct slice was requested, but the labels are not unique single tokens. "
                 "Fell back to a letter head: the options are written out, and the unembedding is sliced to the letter tokens."
             )
-            return bound
-        node = Node(
-            field_id=job.id,
-            block=slice_block(job.question, job.labels),
-            groups=direct,
-            class_names=list(job.labels),
-        )
-        return BoundField(
-            id=job.id,
-            kind="categorical",
-            head="vocab_slice",
-            reason=(
-                "Every label is already one distinct token, so the head is those rows of the frozen unembedding. "
-                "One forward, one position, softmax over the labels. No letter code and no decode."
-            ),
-            labels=list(job.labels),
-            nodes=[node],
-            prompt_preview=node.block,
+            return plan
+        branch = Branch(id=job.id, field=job.id, block=slice_block(job.question, job.labels))
+        return _plan(
+            job,
+            "vocab_slice",
+            "Every label is already one distinct token, so the head is those rows of the frozen unembedding. "
+            "One forward, one position, softmax over the labels. No letter code and no decode.",
+            [branch],
+            reads=[Read(branch=branch.id, groups=direct)],
+            combine=Combine(op="softmax", labels=list(job.labels)),
+            answer_tokens=list(job.labels),
         )
     return _letters(job, enc)
 
 
-def _letters(job: FieldJob, enc: Encoder) -> BoundField:
+def _letters(job: FieldJob, enc: Encoder) -> FieldPlan:
     if len(job.labels) > len(LETTERS):
         raise CompileError("Too many labels for the letter head.")
     pairs: list[tuple[str, str]] = []
@@ -222,83 +198,60 @@ def _letters(job: FieldJob, enc: Encoder) -> BoundField:
             raise CompileError("Ran out of single-token letters in this tokenizer.")
         pairs.append((chosen[0], label))
         groups.append([chosen[1]])
-    node = Node(
-        field_id=job.id,
-        block=letter_block(job.question, pairs),
-        groups=groups,
-        class_names=list(job.labels),
-    )
-    return BoundField(
-        id=job.id,
-        kind="categorical",
-        head="letter_slice",
-        reason=(
-            "Labels are not unique single tokens, so each one is given a letter and the head is the letter rows "
-            "of the unembedding, read at the JSON answer boundary. One forward scores every option. "
-            "This is the Simple Jev / OpenJev choice head."
-        ),
-        labels=list(job.labels),
-        nodes=[node],
+    branch = Branch(id=job.id, field=job.id, block=letter_block(job.question, pairs))
+    return _plan(
+        job,
+        "letter_slice",
+        "Labels are not unique single tokens, so each one is given a letter and the head is the letter rows "
+        "of the unembedding, read at the JSON answer boundary. One forward scores every option. "
+        "This is the Simple Jev / OpenJev choice head.",
+        [branch],
+        reads=[Read(branch=branch.id, groups=groups)],
+        combine=Combine(op="softmax", labels=list(job.labels)),
         letters={label: letter for letter, label in pairs},
-        prompt_preview=node.block,
+        answer_tokens=[letter for letter, _ in pairs],
     )
 
 
-def _option_margins(job: FieldJob) -> BoundField:
-    nodes = [
-        Node(
-            field_id=job.id,
-            block=option_margin_block(job.question, label),
-            label=label,
-            mode="margin_option",
-        )
-        for label in job.labels
+def _option_margins(job: FieldJob, enc: Encoder) -> FieldPlan:
+    groups = yes_no_groups(enc)
+    branches = [
+        Branch(id=f"{job.id}/{i}", field=job.id, block=option_margin_block(job.question, label), label=label)
+        for i, label in enumerate(job.labels)
     ]
-    return BoundField(
-        id=job.id,
-        kind="categorical",
-        head="option_margin",
-        reason=(
-            "Each option is its own yes/no question on a shared prefix, and the yes-minus-no margins are softmaxed "
-            "so the options compete. This is the Glance pick-one head: more branches than a letter slice, "
-            "and the candidate text is judged instead of a code."
-        ),
-        labels=list(job.labels),
-        nodes=nodes,
-        prompt_preview=nodes[0].block,
+    return _plan(
+        job,
+        "option_margin",
+        "Each option is its own yes/no question on a shared prefix, and the yes-minus-no margins are softmaxed "
+        "so the options compete. This is the Glance pick-one head: more branches than a letter slice, "
+        "and the candidate text is judged instead of a code.",
+        branches,
+        reads=[Read(branch=b.id, groups=groups) for b in branches],
+        combine=Combine(op="margin_softmax", labels=list(job.labels)),
     )
 
 
-def _prototype(job: FieldJob, enc: Encoder) -> BoundField:
+def _prototype(job: FieldJob, enc: Encoder) -> FieldPlan:
     pieces: list[list[int]] = []
     for label in job.labels:
         ids = enc.token_ids(label)
         if not ids:
             raise CompileError(f"Label {label!r} has no tokens.")
         pieces.append(ids)
-    node = Node(
-        field_id=job.id,
-        block=slice_block(job.question, job.labels),
-        class_names=list(job.labels),
-        pieces=pieces,
-        mode="prototype",
-    )
-    return BoundField(
-        id=job.id,
-        kind="categorical",
-        head="prototype",
-        reason=(
-            "Prototype head: each label is the mean of its unembedding rows, dotted with the hidden state at the "
-            "answer boundary. One forward, no new weights. Overlapping words between labels blur this head; "
-            "a letter slice is the better default."
-        ),
-        labels=list(job.labels),
-        nodes=[node],
-        prompt_preview=node.block,
+    branch = Branch(id=job.id, field=job.id, block=slice_block(job.question, job.labels))
+    return _plan(
+        job,
+        "prototype",
+        "Prototype head: each label is the mean of its unembedding rows, dotted with the hidden state at the "
+        "answer boundary. One forward, no new weights. Overlapping words between labels blur this head; "
+        "a letter slice is the better default.",
+        [branch],
+        reads=[Read(branch=branch.id, op="prototype", pieces=pieces)],
+        combine=Combine(op="softmax", labels=list(job.labels)),
     )
 
 
-def _ordinal(job: FieldJob, enc: Encoder) -> BoundField:
+def _ordinal(job: FieldJob, enc: Encoder) -> FieldPlan:
     digits = job.score_tokens or [str(i) for i in range(len(job.labels))]
     if len(digits) != len(job.labels):
         raise CompileError("Ordinal score tokens must line up with levels.")
@@ -312,50 +265,33 @@ def _ordinal(job: FieldJob, enc: Encoder) -> BoundField:
             raise CompileError(f"Level token {digit!r} collides with another level.")
         seen.add(tid)
         groups.append([tid])
-    node = Node(
-        field_id=job.id,
-        block=ordinal_block(job.question, job.labels, digits),
-        groups=groups,
-        class_names=list(job.labels),
-    )
-    return BoundField(
-        id=job.id,
-        kind="ordinal",
-        head="ordinal_expectation",
-        reason=(
-            "A rating is not an argmax. The head is the digit rows of the unembedding; softmax gives a distribution "
-            "over levels, and the score is the expected level. Same construction as Glance's rubric readout."
-        ),
-        labels=list(job.labels),
-        nodes=[node],
-        origin=job.origin,
-        prompt_preview=node.block,
+    branch = Branch(id=job.id, field=job.id, block=ordinal_block(job.question, job.labels, digits))
+    return _plan(
+        job,
+        "ordinal_expectation",
+        "A rating is not an argmax. The head is the digit rows of the unembedding; softmax gives a distribution "
+        "over levels, and the score is the expected level. Same construction as Glance's rubric readout.",
+        [branch],
+        reads=[Read(branch=branch.id, groups=groups)],
+        combine=Combine(op="expectation", labels=list(job.labels), origin=job.origin),
+        answer_tokens=list(digits),
     )
 
 
-def _multilabel(job: FieldJob, enc: Encoder) -> BoundField:
-    # Touch the encoder so a tokenizer without Yes/No fails here, once.
-    _boolean(FieldJob(id=job.id, kind="boolean", question=job.question), enc)
-    nodes = [
-        Node(
-            field_id=job.id,
-            block=tag_block(job.question, label),
-            label=label,
-            mode="independent",
-        )
-        for label in job.labels
+def _multilabel(job: FieldJob, enc: Encoder) -> FieldPlan:
+    groups = yes_no_groups(enc)
+    branches = [
+        Branch(id=f"{job.id}/{i}", field=job.id, block=tag_block(job.question, label), label=label)
+        for i, label in enumerate(job.labels)
     ]
-    return BoundField(
-        id=job.id,
-        kind="multilabel",
-        head="multilabel_margin",
-        reason=(
-            "Flags do not compete. Each label is its own yes/no margin and its own sigmoid, on a shared prefix. "
-            "A softmax here would force exactly one flag, which is a different question."
-        ),
-        labels=list(job.labels),
-        nodes=nodes,
-        prompt_preview=nodes[0].block,
+    return _plan(
+        job,
+        "multilabel_margin",
+        "Flags do not compete. Each label is its own yes/no margin and its own sigmoid, on a shared prefix. "
+        "A softmax here would force exactly one flag, which is a different question.",
+        branches,
+        reads=[Read(branch=b.id, groups=groups) for b in branches],
+        combine=Combine(op="flags", labels=list(job.labels)),
     )
 
 

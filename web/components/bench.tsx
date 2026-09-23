@@ -5,13 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { PRESETS } from "@/lib/presets";
+import { PRESETS, QUESTIONS } from "@/lib/presets";
 import {
   headLabel,
   formatAnswer,
   type DecideResponse,
   type FieldResult,
   type Health,
+  type Plan,
   type Preset,
   type Shape,
 } from "@/lib/types";
@@ -25,6 +26,7 @@ const SHAPES: { id: Shape; label: string }[] = [
   { id: "multilabel", label: "Flags" },
   { id: "open", label: "Open" },
   { id: "schema", label: "Schema" },
+  { id: "questions", label: "Typed questions (JSON)" },
 ];
 
 export function Bench() {
@@ -35,6 +37,7 @@ export function Bench() {
   const [options, setOptions] = useState(PRESETS[0].options);
   const [levels, setLevels] = useState(PRESETS[0].levels);
   const [schema, setSchema] = useState(PRESETS[0].schema);
+  const [questions, setQuestions] = useState(PRESETS[0].questions ?? QUESTIONS);
   const [strategy, setStrategy] = useState(PRESETS[0].strategy);
   const [examples, setExamples] = useState(PRESETS[0].examples);
   const [health, setHealth] = useState<Health | null>(null);
@@ -71,6 +74,7 @@ export function Bench() {
     setOptions(preset.options);
     setLevels(preset.levels);
     setSchema(preset.schema);
+    setQuestions(preset.questions ?? QUESTIONS);
     setStrategy(preset.strategy);
     setExamples(preset.examples);
     setError(null);
@@ -84,6 +88,8 @@ export function Bench() {
       const body: Record<string, unknown> = { context, strategy };
       if (shape === "schema") {
         body.schema = JSON.parse(schema);
+      } else if (shape === "questions") {
+        body.questions = JSON.parse(questions);
       } else {
         body.type = shape;
         body.question = question;
@@ -109,7 +115,7 @@ export function Bench() {
       setOpenPrompt(null);
     } catch (err) {
       setResult(null);
-      setError(err instanceof SyntaxError ? "The schema is not valid JSON." : (err as Error).message);
+      setError(err instanceof SyntaxError ? "The JSON is not valid." : (err as Error).message);
     } finally {
       setRunning(false);
     }
@@ -211,7 +217,7 @@ export function Bench() {
             />
           </div>
 
-          {shape !== "schema" ? (
+          {shape !== "schema" && shape !== "questions" ? (
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="question">Question</Label>
               <Textarea
@@ -258,6 +264,19 @@ export function Bench() {
                 value={schema}
                 onChange={(event) => setSchema(event.target.value)}
                 rows={16}
+                className="border-rule bg-background font-mono text-[13px] leading-relaxed"
+              />
+            </div>
+          ) : null}
+
+          {shape === "questions" ? (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="questions">Questions by id</Label>
+              <Textarea
+                id="questions"
+                value={questions}
+                onChange={(event) => setQuestions(event.target.value)}
+                rows={18}
                 className="border-rule bg-background font-mono text-[13px] leading-relaxed"
               />
             </div>
@@ -366,6 +385,8 @@ function Trace({
         </ul>
       </div>
 
+      {result.plan ? <PlanCard plan={result.plan} /> : null}
+
       {result.notes.map((note) => (
         <p key={note} className="text-sm leading-relaxed text-ink-soft">
           {note}
@@ -389,6 +410,38 @@ function Trace({
   );
 }
 
+function PlanCard({ plan }: { plan: Plan }) {
+  return (
+    <div className="border border-rule px-3 py-2">
+      <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-soft">Plan</p>
+      <p className="mt-1 text-sm">{plan.summary}</p>
+      <ul className="mt-2 space-y-1.5">
+        {plan.fields.map((field) => (
+          <li key={field.id} className="font-mono text-[12px] leading-relaxed">
+            <span className={field.skipped ? "text-ink-soft line-through" : "text-foreground"}>{field.id}</span>
+            <span className="text-ink-soft">
+              {" "}
+              · {field.type ?? field.head} · {field.branches} branch{field.branches === 1 ? "" : "es"}
+              {field.combine ? ` · ${field.combine}` : ""}
+              {field.decode ? ` · ${field.decode}` : ""}
+              {field.depth ? ` · ${field.depth}` : ""}
+              {field.source ? ` · ${field.source}` : ""}
+              {field.depends_on ? ` · if ${field.depends_on.question} = ${JSON.stringify(field.depends_on.when)}` : ""}
+              {field.continues ? ` · continues ${field.continues}` : field.include_answers?.length ? ` · sees ${field.include_answers.join(", ")}` : ""}
+              {field.skipped ? " · skipped" : ""}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {plan.stages.length > 1 ? (
+        <p className="mt-2 font-mono text-[11px] text-ink-soft">
+          stages: {plan.stages.map((stage) => stage.join(", ")).join(" → ")}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function FieldCard({
   field,
   vocab,
@@ -406,7 +459,7 @@ function FieldCard({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-soft">{field.id}</p>
-          <p className="mt-1 font-serif text-2xl leading-tight">{formatAnswer(field.answer)}</p>
+          <p className="mt-1 font-serif text-2xl leading-tight">{field.skipped ? "skipped" : formatAnswer(field.answer)}</p>
           {field.score !== null ? (
             <p className="mt-1 font-mono text-xs text-ink-soft">expected level {field.score.toFixed(2)}</p>
           ) : null}
@@ -435,6 +488,15 @@ function FieldCard({
             </li>
           ))}
         </ul>
+      ) : null}
+
+      {field.judgments ? (
+        <p className="mt-2 font-mono text-xs text-ink-soft">
+          {Object.entries(field.judgments)
+            .map(([side, probability]) => `${side} criterion fits ${probability.toFixed(2)}`)
+            .join(" · ")}
+          {field.ambiguous ? " · the two judgments conflict" : ""}
+        </p>
       ) : null}
 
       <p className="mt-3 text-sm leading-relaxed text-ink-soft">{field.reason}</p>
@@ -510,6 +572,7 @@ function shapeHelp(shape: Shape): string {
   if (shape === "boolean") return "Sigmoid of the Yes − No margin. One position.";
   if (shape === "ordinal") return "Softmax over the digit rows. The score is the expected level.";
   if (shape === "multilabel") return "Each flag is its own yes/no. They are not forced to sum to one.";
+  if (shape === "questions") return "A map of typed questions. depends_on skips a question unless its parent matches; include_answers shows it earlier answers.";
   if (shape === "open") return "No rows to read. The model answers as an ordinary chat turn and pays for every token.";
   return "Each property becomes its own head. Closed fields share the prefill.";
 }

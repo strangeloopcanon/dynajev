@@ -8,10 +8,10 @@
     "answer": true,
     "correct": true,
     "head": "binary_margin",
-    "prefill": 100,
+    "prefill": 93,
     "generated": 0,
-    "ms": 6851.4,
-    "confidence": 0.9903
+    "ms": 379.6,
+    "confidence": 0.9915
    },
    "write": {
     "raw": "Yes",
@@ -19,7 +19,7 @@
     "correct": true,
     "prefill": 94,
     "generated": 2,
-    "ms": 376.9
+    "ms": 396.3
    }
   },
   {
@@ -29,10 +29,10 @@
     "answer": false,
     "correct": true,
     "head": "binary_margin",
-    "prefill": 92,
+    "prefill": 85,
     "generated": 0,
-    "ms": 252.1,
-    "confidence": 0.9931
+    "ms": 268.1,
+    "confidence": 0.9955
    },
    "write": {
     "raw": "No",
@@ -40,7 +40,7 @@
     "correct": true,
     "prefill": 86,
     "generated": 2,
-    "ms": 359.4
+    "ms": 395.9
    }
   },
   {
@@ -50,10 +50,10 @@
     "answer": true,
     "correct": true,
     "head": "binary_margin",
-    "prefill": 96,
+    "prefill": 89,
     "generated": 0,
-    "ms": 243.7,
-    "confidence": 0.9693
+    "ms": 269.8,
+    "confidence": 0.9789
    },
    "write": {
     "raw": "Yes",
@@ -61,7 +61,7 @@
     "correct": true,
     "prefill": 90,
     "generated": 2,
-    "ms": 358.7
+    "ms": 388.8
    }
   },
   {
@@ -71,10 +71,10 @@
     "answer": false,
     "correct": true,
     "head": "binary_margin",
-    "prefill": 88,
+    "prefill": 81,
     "generated": 0,
-    "ms": 256.1,
-    "confidence": 0.9923
+    "ms": 307.0,
+    "confidence": 0.987
    },
    "write": {
     "raw": "No",
@@ -82,7 +82,7 @@
     "correct": true,
     "prefill": 82,
     "generated": 2,
-    "ms": 364.4
+    "ms": 384.7
    }
   },
   {
@@ -92,10 +92,10 @@
     "answer": true,
     "correct": true,
     "head": "binary_margin",
-    "prefill": 87,
+    "prefill": 80,
     "generated": 0,
-    "ms": 254.8,
-    "confidence": 0.9584
+    "ms": 254.3,
+    "confidence": 0.9802
    },
    "write": {
     "raw": "Yes",
@@ -103,7 +103,7 @@
     "correct": true,
     "prefill": 81,
     "generated": 2,
-    "ms": 364.4
+    "ms": 376.1
    }
   },
   {
@@ -113,10 +113,10 @@
     "answer": false,
     "correct": true,
     "head": "binary_margin",
-    "prefill": 90,
+    "prefill": 83,
     "generated": 0,
-    "ms": 229.9,
-    "confidence": 0.984
+    "ms": 291.1,
+    "confidence": 0.9891
    },
    "write": {
     "raw": "No",
@@ -124,7 +124,7 @@
     "correct": true,
     "prefill": 84,
     "generated": 2,
-    "ms": 349.3
+    "ms": 394.0
    }
   },
   {
@@ -134,10 +134,10 @@
     "answer": true,
     "correct": true,
     "head": "binary_margin",
-    "prefill": 84,
+    "prefill": 77,
     "generated": 0,
-    "ms": 221.6,
-    "confidence": 0.9836
+    "ms": 261.8,
+    "confidence": 0.9971
    },
    "write": {
     "raw": "Yes",
@@ -145,7 +145,7 @@
     "correct": true,
     "prefill": 78,
     "generated": 2,
-    "ms": 383.5
+    "ms": 392.1
    }
   },
   {
@@ -155,10 +155,10 @@
     "answer": false,
     "correct": true,
     "head": "binary_margin",
-    "prefill": 89,
+    "prefill": 82,
     "generated": 0,
-    "ms": 253.5,
-    "confidence": 0.9992
+    "ms": 244.6,
+    "confidence": 0.9997
    },
    "write": {
     "raw": "No",
@@ -166,7 +166,7 @@
     "correct": true,
     "prefill": 83,
     "generated": 2,
-    "ms": 359.7
+    "ms": 358.2
    }
   },
   {
@@ -176,10 +176,10 @@
     "answer": true,
     "correct": true,
     "head": "binary_margin",
-    "prefill": 103,
+    "prefill": 96,
     "generated": 0,
-    "ms": 258.0,
-    "confidence": 0.9927
+    "ms": 269.5,
+    "confidence": 0.9953
    },
    "write": {
     "raw": "Yes",
@@ -187,7 +187,7 @@
     "correct": true,
     "prefill": 97,
     "generated": 2,
-    "ms": 369.1
+    "ms": 386.6
    }
   },
   {
@@ -197,10 +197,10 @@
     "answer": false,
     "correct": true,
     "head": "binary_margin",
-    "prefill": 106,
+    "prefill": 99,
     "generated": 0,
-    "ms": 259.2,
-    "confidence": 0.9947
+    "ms": 272.4,
+    "confidence": 0.9957
    },
    "write": {
     "raw": "No",
@@ -208,7 +208,7 @@
     "correct": true,
     "prefill": 100,
     "generated": 2,
-    "ms": 356.4
+    "ms": 425.3
    }
   },
   {
@@ -218,178 +218,10 @@
     "answer": false,
     "correct": true,
     "head": "binary_margin",
-    "prefill": 91,
-    "generated": 0,
-    "ms": 244.2,
-    "confidence": 0.9976
-   },
-   "write": {
-    "raw": "No",
-    "parsed": false,
-    "correct": true,
-    "prefill": 85,
-    "generated": 2,
-    "ms": 362.0
-   }
-  },
-  {
-   "kind": "boolean",
-   "id": "b12",
-   "read": {
-    "answer": true,
-    "correct": true,
-    "head": "binary_margin",
-    "prefill": 91,
-    "generated": 0,
-    "ms": 231.5,
-    "confidence": 0.674
-   },
-   "write": {
-    "raw": "Yes",
-    "parsed": true,
-    "correct": true,
-    "prefill": 85,
-    "generated": 2,
-    "ms": 339.2
-   }
-  },
-  {
-   "kind": "boolean",
-   "id": "b13",
-   "read": {
-    "answer": true,
-    "correct": true,
-    "head": "binary_margin",
-    "prefill": 87,
-    "generated": 0,
-    "ms": 230.3,
-    "confidence": 0.9772
-   },
-   "write": {
-    "raw": "Yes",
-    "parsed": true,
-    "correct": true,
-    "prefill": 81,
-    "generated": 2,
-    "ms": 360.1
-   }
-  },
-  {
-   "kind": "boolean",
-   "id": "b14",
-   "read": {
-    "answer": false,
-    "correct": true,
-    "head": "binary_margin",
     "prefill": 84,
     "generated": 0,
-    "ms": 241.3,
-    "confidence": 0.9602
-   },
-   "write": {
-    "raw": "No",
-    "parsed": false,
-    "correct": true,
-    "prefill": 78,
-    "generated": 2,
-    "ms": 332.7
-   }
-  },
-  {
-   "kind": "boolean",
-   "id": "b15",
-   "read": {
-    "answer": true,
-    "correct": true,
-    "head": "binary_margin",
-    "prefill": 98,
-    "generated": 0,
-    "ms": 255.2,
-    "confidence": 0.938
-   },
-   "write": {
-    "raw": "Yes",
-    "parsed": true,
-    "correct": true,
-    "prefill": 92,
-    "generated": 2,
-    "ms": 351.4
-   }
-  },
-  {
-   "kind": "boolean",
-   "id": "b16",
-   "read": {
-    "answer": false,
-    "correct": true,
-    "head": "binary_margin",
-    "prefill": 103,
-    "generated": 0,
-    "ms": 1562.5,
-    "confidence": 0.9965
-   },
-   "write": {
-    "raw": "No",
-    "parsed": false,
-    "correct": true,
-    "prefill": 97,
-    "generated": 2,
-    "ms": 1252.8
-   }
-  },
-  {
-   "kind": "boolean",
-   "id": "b17",
-   "read": {
-    "answer": true,
-    "correct": true,
-    "head": "binary_margin",
-    "prefill": 84,
-    "generated": 0,
-    "ms": 685.8,
-    "confidence": 0.9922
-   },
-   "write": {
-    "raw": "Yes",
-    "parsed": true,
-    "correct": true,
-    "prefill": 78,
-    "generated": 2,
-    "ms": 346.7
-   }
-  },
-  {
-   "kind": "boolean",
-   "id": "b18",
-   "read": {
-    "answer": false,
-    "correct": true,
-    "head": "binary_margin",
-    "prefill": 89,
-    "generated": 0,
-    "ms": 223.5,
-    "confidence": 0.989
-   },
-   "write": {
-    "raw": "No",
-    "parsed": false,
-    "correct": true,
-    "prefill": 83,
-    "generated": 2,
-    "ms": 338.5
-   }
-  },
-  {
-   "kind": "boolean",
-   "id": "b19",
-   "read": {
-    "answer": false,
-    "correct": true,
-    "head": "binary_margin",
-    "prefill": 91,
-    "generated": 0,
-    "ms": 226.7,
-    "confidence": 0.9992
+    "ms": 236.6,
+    "confidence": 0.9978
    },
    "write": {
     "raw": "No",
@@ -402,15 +234,183 @@
   },
   {
    "kind": "boolean",
+   "id": "b12",
+   "read": {
+    "answer": true,
+    "correct": true,
+    "head": "binary_margin",
+    "prefill": 84,
+    "generated": 0,
+    "ms": 236.3,
+    "confidence": 0.5788
+   },
+   "write": {
+    "raw": "Yes",
+    "parsed": true,
+    "correct": true,
+    "prefill": 85,
+    "generated": 2,
+    "ms": 376.8
+   }
+  },
+  {
+   "kind": "boolean",
+   "id": "b13",
+   "read": {
+    "answer": true,
+    "correct": true,
+    "head": "binary_margin",
+    "prefill": 80,
+    "generated": 0,
+    "ms": 220.5,
+    "confidence": 0.981
+   },
+   "write": {
+    "raw": "Yes",
+    "parsed": true,
+    "correct": true,
+    "prefill": 81,
+    "generated": 2,
+    "ms": 409.9
+   }
+  },
+  {
+   "kind": "boolean",
+   "id": "b14",
+   "read": {
+    "answer": false,
+    "correct": true,
+    "head": "binary_margin",
+    "prefill": 77,
+    "generated": 0,
+    "ms": 256.7,
+    "confidence": 0.9825
+   },
+   "write": {
+    "raw": "No",
+    "parsed": false,
+    "correct": true,
+    "prefill": 78,
+    "generated": 2,
+    "ms": 379.2
+   }
+  },
+  {
+   "kind": "boolean",
+   "id": "b15",
+   "read": {
+    "answer": true,
+    "correct": true,
+    "head": "binary_margin",
+    "prefill": 91,
+    "generated": 0,
+    "ms": 262.5,
+    "confidence": 0.947
+   },
+   "write": {
+    "raw": "Yes",
+    "parsed": true,
+    "correct": true,
+    "prefill": 92,
+    "generated": 2,
+    "ms": 418.7
+   }
+  },
+  {
+   "kind": "boolean",
+   "id": "b16",
+   "read": {
+    "answer": false,
+    "correct": true,
+    "head": "binary_margin",
+    "prefill": 96,
+    "generated": 0,
+    "ms": 266.3,
+    "confidence": 0.9983
+   },
+   "write": {
+    "raw": "No",
+    "parsed": false,
+    "correct": true,
+    "prefill": 97,
+    "generated": 2,
+    "ms": 382.4
+   }
+  },
+  {
+   "kind": "boolean",
+   "id": "b17",
+   "read": {
+    "answer": true,
+    "correct": true,
+    "head": "binary_margin",
+    "prefill": 77,
+    "generated": 0,
+    "ms": 260.8,
+    "confidence": 0.9935
+   },
+   "write": {
+    "raw": "Yes",
+    "parsed": true,
+    "correct": true,
+    "prefill": 78,
+    "generated": 2,
+    "ms": 363.7
+   }
+  },
+  {
+   "kind": "boolean",
+   "id": "b18",
+   "read": {
+    "answer": false,
+    "correct": true,
+    "head": "binary_margin",
+    "prefill": 82,
+    "generated": 0,
+    "ms": 250.4,
+    "confidence": 0.9927
+   },
+   "write": {
+    "raw": "No",
+    "parsed": false,
+    "correct": true,
+    "prefill": 83,
+    "generated": 2,
+    "ms": 362.9
+   }
+  },
+  {
+   "kind": "boolean",
+   "id": "b19",
+   "read": {
+    "answer": false,
+    "correct": true,
+    "head": "binary_margin",
+    "prefill": 84,
+    "generated": 0,
+    "ms": 239.7,
+    "confidence": 0.9995
+   },
+   "write": {
+    "raw": "No",
+    "parsed": false,
+    "correct": true,
+    "prefill": 85,
+    "generated": 2,
+    "ms": 364.9
+   }
+  },
+  {
+   "kind": "boolean",
    "id": "b20",
    "read": {
     "answer": true,
     "correct": true,
     "head": "binary_margin",
-    "prefill": 89,
+    "prefill": 82,
     "generated": 0,
-    "ms": 227.7,
-    "confidence": 0.9924
+    "ms": 234.7,
+    "confidence": 0.9972
    },
    "write": {
     "raw": "Yes",
@@ -418,7 +418,7 @@
     "correct": true,
     "prefill": 83,
     "generated": 2,
-    "ms": 339.5
+    "ms": 423.3
    }
   },
   {
@@ -428,10 +428,10 @@
     "answer": true,
     "correct": true,
     "head": "binary_margin",
-    "prefill": 89,
+    "prefill": 82,
     "generated": 0,
-    "ms": 232.4,
-    "confidence": 0.9173
+    "ms": 254.9,
+    "confidence": 0.9422
    },
    "write": {
     "raw": "Yes",
@@ -439,7 +439,7 @@
     "correct": true,
     "prefill": 83,
     "generated": 2,
-    "ms": 343.3
+    "ms": 367.2
    }
   },
   {
@@ -449,10 +449,10 @@
     "answer": false,
     "correct": true,
     "head": "binary_margin",
-    "prefill": 86,
+    "prefill": 79,
     "generated": 0,
-    "ms": 225.7,
-    "confidence": 0.9251
+    "ms": 260.2,
+    "confidence": 0.9493
    },
    "write": {
     "raw": "No",
@@ -460,7 +460,7 @@
     "correct": true,
     "prefill": 80,
     "generated": 2,
-    "ms": 347.9
+    "ms": 346.7
    }
   },
   {
@@ -470,10 +470,10 @@
     "answer": false,
     "correct": true,
     "head": "binary_margin",
-    "prefill": 88,
+    "prefill": 81,
     "generated": 0,
-    "ms": 230.1,
-    "confidence": 0.9961
+    "ms": 251.9,
+    "confidence": 0.9969
    },
    "write": {
     "raw": "No",
@@ -481,7 +481,7 @@
     "correct": true,
     "prefill": 82,
     "generated": 2,
-    "ms": 340.2
+    "ms": 397.0
    }
   },
   {
@@ -491,10 +491,10 @@
     "answer": true,
     "correct": true,
     "head": "binary_margin",
-    "prefill": 89,
+    "prefill": 82,
     "generated": 0,
-    "ms": 245.8,
-    "confidence": 0.9958
+    "ms": 257.0,
+    "confidence": 0.9986
    },
    "write": {
     "raw": "Yes",
@@ -502,7 +502,7 @@
     "correct": true,
     "prefill": 83,
     "generated": 2,
-    "ms": 349.6
+    "ms": 367.9
    }
   },
   {
@@ -512,10 +512,10 @@
     "answer": "red",
     "correct": true,
     "head": "vocab_slice",
-    "prefill": 100,
+    "prefill": 84,
     "generated": 0,
-    "ms": 277.5,
-    "confidence": 0.999
+    "ms": 243.6,
+    "confidence": 0.9999
    },
    "write": {
     "raw": "red",
@@ -523,7 +523,7 @@
     "correct": true,
     "prefill": 93,
     "generated": 2,
-    "ms": 369.2
+    "ms": 369.5
    }
   },
   {
@@ -533,10 +533,10 @@
     "answer": "blue",
     "correct": true,
     "head": "vocab_slice",
-    "prefill": 100,
+    "prefill": 84,
     "generated": 0,
-    "ms": 251.0,
-    "confidence": 0.9693
+    "ms": 240.3,
+    "confidence": 0.9797
    },
    "write": {
     "raw": "blue",
@@ -544,7 +544,7 @@
     "correct": true,
     "prefill": 93,
     "generated": 2,
-    "ms": 346.8
+    "ms": 402.4
    }
   },
   {
@@ -554,10 +554,10 @@
     "answer": "Friday",
     "correct": true,
     "head": "vocab_slice",
-    "prefill": 97,
+    "prefill": 81,
     "generated": 0,
-    "ms": 236.1,
-    "confidence": 0.9983
+    "ms": 241.3,
+    "confidence": 0.999
    },
    "write": {
     "raw": "Friday",
@@ -565,7 +565,7 @@
     "correct": true,
     "prefill": 90,
     "generated": 2,
-    "ms": 349.8
+    "ms": 386.4
    }
   },
   {
@@ -575,10 +575,10 @@
     "answer": "Monday",
     "correct": true,
     "head": "vocab_slice",
-    "prefill": 98,
+    "prefill": 82,
     "generated": 0,
-    "ms": 238.3,
-    "confidence": 0.9486
+    "ms": 244.4,
+    "confidence": 0.9797
    },
    "write": {
     "raw": "Monday",
@@ -586,7 +586,7 @@
     "correct": true,
     "prefill": 91,
     "generated": 2,
-    "ms": 351.1
+    "ms": 382.6
    }
   },
   {
@@ -596,10 +596,10 @@
     "answer": "cold",
     "correct": true,
     "head": "vocab_slice",
-    "prefill": 97,
+    "prefill": 81,
     "generated": 0,
-    "ms": 240.2,
-    "confidence": 0.9994
+    "ms": 256.3,
+    "confidence": 0.9998
    },
    "write": {
     "raw": "cold",
@@ -607,7 +607,7 @@
     "correct": true,
     "prefill": 90,
     "generated": 2,
-    "ms": 345.7
+    "ms": 375.8
    }
   },
   {
@@ -617,10 +617,10 @@
     "answer": "Reno",
     "correct": true,
     "head": "letter_slice",
-    "prefill": 104,
+    "prefill": 93,
     "generated": 0,
-    "ms": 256.6,
-    "confidence": 0.9988
+    "ms": 283.9,
+    "confidence": 0.9986
    },
    "write": {
     "raw": "Reno",
@@ -628,7 +628,7 @@
     "correct": true,
     "prefill": 92,
     "generated": 3,
-    "ms": 461.1
+    "ms": 506.1
    }
   },
   {
@@ -638,10 +638,10 @@
     "answer": "monthly",
     "correct": true,
     "head": "vocab_slice",
-    "prefill": 102,
+    "prefill": 86,
     "generated": 0,
-    "ms": 259.9,
-    "confidence": 0.6272
+    "ms": 249.7,
+    "confidence": 0.7206
    },
    "write": {
     "raw": "monthly",
@@ -649,7 +649,7 @@
     "correct": true,
     "prefill": 95,
     "generated": 2,
-    "ms": 362.8
+    "ms": 417.3
    }
   },
   {
@@ -659,10 +659,10 @@
     "answer": "Spanish",
     "correct": true,
     "head": "vocab_slice",
-    "prefill": 98,
+    "prefill": 82,
     "generated": 0,
-    "ms": 235.8,
-    "confidence": 0.9734
+    "ms": 240.5,
+    "confidence": 0.9874
    },
    "write": {
     "raw": "Spanish",
@@ -670,7 +670,7 @@
     "correct": true,
     "prefill": 91,
     "generated": 2,
-    "ms": 343.2
+    "ms": 484.4
    }
   },
   {
@@ -680,10 +680,10 @@
     "answer": "rain",
     "correct": true,
     "head": "vocab_slice",
-    "prefill": 98,
+    "prefill": 82,
     "generated": 0,
-    "ms": 233.6,
-    "confidence": 0.9999
+    "ms": 269.6,
+    "confidence": 0.9998
    },
    "write": {
     "raw": "rain",
@@ -691,7 +691,7 @@
     "correct": true,
     "prefill": 91,
     "generated": 2,
-    "ms": 421.7
+    "ms": 367.9
    }
   },
   {
@@ -701,10 +701,10 @@
     "answer": "sun",
     "correct": true,
     "head": "vocab_slice",
-    "prefill": 98,
+    "prefill": 82,
     "generated": 0,
-    "ms": 236.7,
-    "confidence": 0.9042
+    "ms": 240.3,
+    "confidence": 0.9957
    },
    "write": {
     "raw": "sun",
@@ -712,7 +712,7 @@
     "correct": true,
     "prefill": 91,
     "generated": 2,
-    "ms": 352.1
+    "ms": 403.6
    }
   },
   {
@@ -722,10 +722,10 @@
     "answer": "large",
     "correct": true,
     "head": "vocab_slice",
-    "prefill": 96,
+    "prefill": 80,
     "generated": 0,
-    "ms": 231.8,
-    "confidence": 0.9945
+    "ms": 230.8,
+    "confidence": 0.9968
    },
    "write": {
     "raw": "large",
@@ -733,7 +733,7 @@
     "correct": true,
     "prefill": 89,
     "generated": 2,
-    "ms": 342.5
+    "ms": 370.8
    }
   },
   {
@@ -743,10 +743,10 @@
     "answer": "left",
     "correct": true,
     "head": "vocab_slice",
-    "prefill": 97,
+    "prefill": 81,
     "generated": 0,
-    "ms": 236.7,
-    "confidence": 0.9992
+    "ms": 284.4,
+    "confidence": 0.9996
    },
    "write": {
     "raw": "left",
@@ -754,7 +754,7 @@
     "correct": true,
     "prefill": 90,
     "generated": 2,
-    "ms": 337.5
+    "ms": 372.6
    }
   },
   {
@@ -764,10 +764,10 @@
     "answer": "billing and payments",
     "correct": true,
     "head": "letter_slice",
-    "prefill": 111,
+    "prefill": 100,
     "generated": 0,
-    "ms": 261.0,
-    "confidence": 0.9812
+    "ms": 266.5,
+    "confidence": 0.9946
    },
    "write": {
     "raw": "billing and payments",
@@ -775,7 +775,7 @@
     "correct": true,
     "prefill": 97,
     "generated": 4,
-    "ms": 588.2
+    "ms": 665.1
    }
   },
   {
@@ -785,10 +785,10 @@
     "answer": "technical support",
     "correct": true,
     "head": "letter_slice",
-    "prefill": 117,
+    "prefill": 106,
     "generated": 0,
-    "ms": 271.4,
-    "confidence": 0.9885
+    "ms": 270.3,
+    "confidence": 0.9893
    },
    "write": {
     "raw": "technical support",
@@ -796,7 +796,7 @@
     "correct": true,
     "prefill": 103,
     "generated": 3,
-    "ms": 467.3
+    "ms": 559.6
    }
   },
   {
@@ -806,10 +806,10 @@
     "answer": "account access",
     "correct": true,
     "head": "letter_slice",
-    "prefill": 112,
+    "prefill": 101,
     "generated": 0,
-    "ms": 257.9,
-    "confidence": 0.7914
+    "ms": 280.3,
+    "confidence": 0.7779
    },
    "write": {
     "raw": "account access",
@@ -817,7 +817,7 @@
     "correct": true,
     "prefill": 98,
     "generated": 3,
-    "ms": 461.3
+    "ms": 530.2
    }
   },
   {
@@ -827,10 +827,10 @@
     "answer": "sales inquiry",
     "correct": true,
     "head": "letter_slice",
-    "prefill": 113,
+    "prefill": 102,
     "generated": 0,
-    "ms": 267.2,
-    "confidence": 0.848
+    "ms": 273.1,
+    "confidence": 0.8187
    },
    "write": {
     "raw": "sales inquiry",
@@ -838,7 +838,7 @@
     "correct": true,
     "prefill": 99,
     "generated": 3,
-    "ms": 485.2
+    "ms": 511.8
    }
   },
   {
@@ -848,10 +848,10 @@
     "answer": "a replacement item",
     "correct": true,
     "head": "letter_slice",
-    "prefill": 104,
+    "prefill": 93,
     "generated": 0,
-    "ms": 237.3,
-    "confidence": 0.9962
+    "ms": 252.1,
+    "confidence": 0.9968
    },
    "write": {
     "raw": "a replacement item",
@@ -859,7 +859,7 @@
     "correct": true,
     "prefill": 92,
     "generated": 4,
-    "ms": 577.0
+    "ms": 653.1
    }
   },
   {
@@ -869,10 +869,10 @@
     "answer": "a tracking update",
     "correct": true,
     "head": "letter_slice",
-    "prefill": 111,
+    "prefill": 100,
     "generated": 0,
-    "ms": 248.5,
-    "confidence": 0.9939
+    "ms": 256.4,
+    "confidence": 0.9953
    },
    "write": {
     "raw": "a tracking update",
@@ -880,7 +880,7 @@
     "correct": true,
     "prefill": 99,
     "generated": 4,
-    "ms": 583.5
+    "ms": 618.6
    }
   },
   {
@@ -890,10 +890,10 @@
     "answer": "a billing review",
     "correct": true,
     "head": "letter_slice",
-    "prefill": 113,
+    "prefill": 102,
     "generated": 0,
-    "ms": 261.0,
-    "confidence": 0.9683
+    "ms": 262.6,
+    "confidence": 0.9424
    },
    "write": {
     "raw": "a billing review",
@@ -901,7 +901,7 @@
     "correct": true,
     "prefill": 101,
     "generated": 4,
-    "ms": 594.9
+    "ms": 716.4
    }
   },
   {
@@ -911,10 +911,10 @@
     "answer": "grateful and satisfied",
     "correct": true,
     "head": "letter_slice",
-    "prefill": 110,
+    "prefill": 99,
     "generated": 0,
-    "ms": 263.5,
-    "confidence": 0.9999
+    "ms": 253.3,
+    "confidence": 0.9998
    },
    "write": {
     "raw": "grateful and satisfied",
@@ -922,7 +922,7 @@
     "correct": true,
     "prefill": 98,
     "generated": 5,
-    "ms": 690.7
+    "ms": 753.8
    }
   },
   {
@@ -932,10 +932,10 @@
     "answer": "angry and frustrated",
     "correct": true,
     "head": "letter_slice",
-    "prefill": 109,
+    "prefill": 98,
     "generated": 0,
-    "ms": 259.8,
-    "confidence": 0.999
+    "ms": 256.9,
+    "confidence": 0.9986
    },
    "write": {
     "raw": "angry and frustrated",
@@ -943,7 +943,7 @@
     "correct": true,
     "prefill": 97,
     "generated": 5,
-    "ms": 728.2
+    "ms": 778.7
    }
   },
   {
@@ -953,10 +953,10 @@
     "answer": "neutral and informational",
     "correct": true,
     "head": "letter_slice",
-    "prefill": 120,
+    "prefill": 109,
     "generated": 0,
-    "ms": 266.9,
-    "confidence": 0.9877
+    "ms": 286.8,
+    "confidence": 0.9819
    },
    "write": {
     "raw": "neutral and informational",
@@ -964,7 +964,7 @@
     "correct": true,
     "prefill": 108,
     "generated": 4,
-    "ms": 605.5
+    "ms": 641.0
    }
   },
   {
@@ -974,10 +974,10 @@
     "answer": "reschedule an appointment",
     "correct": true,
     "head": "letter_slice",
-    "prefill": 108,
+    "prefill": 97,
     "generated": 0,
-    "ms": 251.4,
-    "confidence": 0.9979
+    "ms": 247.9,
+    "confidence": 0.9983
    },
    "write": {
     "raw": "reschedule an appointment",
@@ -985,7 +985,7 @@
     "correct": true,
     "prefill": 96,
     "generated": 5,
-    "ms": 708.1
+    "ms": 766.5
    }
   },
   {
@@ -995,10 +995,10 @@
     "answer": "cancel an appointment",
     "correct": true,
     "head": "letter_slice",
-    "prefill": 116,
+    "prefill": 105,
     "generated": 0,
-    "ms": 273.1,
-    "confidence": 0.9971
+    "ms": 277.6,
+    "confidence": 0.9946
    },
    "write": {
     "raw": "cancel an appointment",
@@ -1006,7 +1006,7 @@
     "correct": true,
     "prefill": 104,
     "generated": 4,
-    "ms": 661.9
+    "ms": 638.8
    }
   },
   {
@@ -1016,10 +1016,10 @@
     "answer": "1 star",
     "correct": true,
     "head": "ordinal_expectation",
-    "prefill": 121,
+    "prefill": 111,
     "generated": 0,
-    "ms": 352.9,
-    "confidence": 0.9962
+    "ms": 275.3,
+    "confidence": 0.9992
    },
    "write": {
     "raw": "1 star",
@@ -1027,7 +1027,7 @@
     "correct": true,
     "prefill": 106,
     "generated": 3,
-    "ms": 477.2
+    "ms": 514.7
    }
   },
   {
@@ -1037,10 +1037,10 @@
     "answer": "5 stars",
     "correct": true,
     "head": "ordinal_expectation",
-    "prefill": 121,
+    "prefill": 111,
     "generated": 0,
-    "ms": 268.9,
-    "confidence": 0.9987
+    "ms": 302.5,
+    "confidence": 0.9996
    },
    "write": {
     "raw": "5 stars",
@@ -1048,7 +1048,7 @@
     "correct": true,
     "prefill": 106,
     "generated": 3,
-    "ms": 488.3
+    "ms": 516.7
    }
   },
   {
@@ -1058,10 +1058,10 @@
     "answer": "3 stars",
     "correct": true,
     "head": "ordinal_expectation",
-    "prefill": 127,
+    "prefill": 117,
     "generated": 0,
-    "ms": 283.0,
-    "confidence": 0.9978
+    "ms": 290.4,
+    "confidence": 0.9992
    },
    "write": {
     "raw": "3 stars",
@@ -1069,7 +1069,7 @@
     "correct": true,
     "prefill": 112,
     "generated": 3,
-    "ms": 483.8
+    "ms": 517.6
    }
   },
   {
@@ -1079,10 +1079,10 @@
     "answer": "4 stars",
     "correct": true,
     "head": "ordinal_expectation",
-    "prefill": 125,
+    "prefill": 115,
     "generated": 0,
-    "ms": 282.0,
-    "confidence": 0.9894
+    "ms": 301.1,
+    "confidence": 0.9966
    },
    "write": {
     "raw": "4 stars",
@@ -1090,7 +1090,7 @@
     "correct": true,
     "prefill": 110,
     "generated": 3,
-    "ms": 492.6
+    "ms": 572.3
    }
   },
   {
@@ -1100,10 +1100,10 @@
     "answer": "2 stars",
     "correct": true,
     "head": "ordinal_expectation",
-    "prefill": 123,
+    "prefill": 113,
     "generated": 0,
-    "ms": 284.5,
-    "confidence": 0.9823
+    "ms": 286.6,
+    "confidence": 0.9975
    },
    "write": {
     "raw": "2 stars",
@@ -1111,7 +1111,7 @@
     "correct": true,
     "prefill": 108,
     "generated": 3,
-    "ms": 472.7
+    "ms": 523.7
    }
   },
   {
@@ -1121,10 +1121,10 @@
     "answer": "critical",
     "correct": true,
     "head": "ordinal_expectation",
-    "prefill": 103,
+    "prefill": 93,
     "generated": 0,
-    "ms": 241.3,
-    "confidence": 0.9921
+    "ms": 242.3,
+    "confidence": 0.9949
    },
    "write": {
     "raw": "critical",
@@ -1132,7 +1132,7 @@
     "correct": true,
     "prefill": 90,
     "generated": 2,
-    "ms": 341.6
+    "ms": 379.5
    }
   },
   {
@@ -1142,10 +1142,10 @@
     "answer": "low",
     "correct": true,
     "head": "ordinal_expectation",
-    "prefill": 104,
+    "prefill": 94,
     "generated": 0,
-    "ms": 244.9,
-    "confidence": 0.9317
+    "ms": 244.6,
+    "confidence": 0.9893
    },
    "write": {
     "raw": "low",
@@ -1153,7 +1153,7 @@
     "correct": true,
     "prefill": 91,
     "generated": 2,
-    "ms": 345.5
+    "ms": 405.9
    }
   },
   {
@@ -1163,10 +1163,10 @@
     "answer": "high",
     "correct": true,
     "head": "ordinal_expectation",
-    "prefill": 107,
+    "prefill": 97,
     "generated": 0,
-    "ms": 260.5,
-    "confidence": 0.9754
+    "ms": 250.3,
+    "confidence": 0.9895
    },
    "write": {
     "raw": "high",
@@ -1174,7 +1174,7 @@
     "correct": true,
     "prefill": 94,
     "generated": 2,
-    "ms": 348.7
+    "ms": 370.5
    }
   },
   {
@@ -1184,10 +1184,10 @@
     "answer": "medium",
     "correct": true,
     "head": "ordinal_expectation",
-    "prefill": 112,
+    "prefill": 102,
     "generated": 0,
-    "ms": 249.0,
-    "confidence": 0.9912
+    "ms": 251.6,
+    "confidence": 0.9963
    },
    "write": {
     "raw": "medium",
@@ -1195,7 +1195,7 @@
     "correct": true,
     "prefill": 99,
     "generated": 2,
-    "ms": 357.7
+    "ms": 375.5
    }
   },
   {
@@ -1205,10 +1205,10 @@
     "answer": "very satisfied",
     "correct": true,
     "head": "ordinal_expectation",
-    "prefill": 116,
+    "prefill": 106,
     "generated": 0,
-    "ms": 259.4,
-    "confidence": 0.9893
+    "ms": 258.2,
+    "confidence": 0.9795
    },
    "write": {
     "raw": "very satisfied",
@@ -1216,7 +1216,7 @@
     "correct": true,
     "prefill": 101,
     "generated": 3,
-    "ms": 474.7
+    "ms": 534.4
    }
   },
   {
@@ -1226,10 +1226,10 @@
     "answer": "very dissatisfied",
     "correct": true,
     "head": "ordinal_expectation",
-    "prefill": 118,
+    "prefill": 108,
     "generated": 0,
-    "ms": 272.0,
-    "confidence": 0.9801
+    "ms": 269.5,
+    "confidence": 0.9797
    },
    "write": {
     "raw": "very dissatisfied",
@@ -1237,7 +1237,7 @@
     "correct": true,
     "prefill": 103,
     "generated": 4,
-    "ms": 599.7
+    "ms": 651.0
    }
   },
   {
@@ -1247,10 +1247,10 @@
     "answer": "neutral",
     "correct": true,
     "head": "ordinal_expectation",
-    "prefill": 114,
+    "prefill": 104,
     "generated": 0,
-    "ms": 269.1,
-    "confidence": 0.9959
+    "ms": 263.6,
+    "confidence": 0.9964
    },
    "write": {
     "raw": "neutral",
@@ -1258,7 +1258,7 @@
     "correct": true,
     "prefill": 99,
     "generated": 2,
-    "ms": 357.0
+    "ms": 397.0
    }
   },
   {
@@ -1266,14 +1266,15 @@
    "id": "m01",
    "read": {
     "answer": [
-     "damage"
+     "damage",
+     "refund request"
     ],
-    "correct": false,
+    "correct": true,
     "head": "multilabel_margin",
-    "prefill": 165,
+    "prefill": 125,
     "generated": 0,
-    "ms": 686.5,
-    "confidence": 0.5251
+    "ms": 706.8,
+    "confidence": 0.8117
    },
    "write": {
     "raw": "damage, refund request",
@@ -1284,7 +1285,7 @@
     "correct": true,
     "prefill": 94,
     "generated": 5,
-    "ms": 710.2
+    "ms": 770.4
    }
   },
   {
@@ -1292,15 +1293,14 @@
    "id": "m02",
    "read": {
     "answer": [
-     "delay",
      "praise"
     ],
-    "correct": true,
+    "correct": false,
     "head": "multilabel_margin",
-    "prefill": 170,
+    "prefill": 130,
     "generated": 0,
-    "ms": 645.1,
-    "confidence": 0.6667
+    "ms": 571.6,
+    "confidence": 0.6884
    },
    "write": {
     "raw": "delay, praise",
@@ -1311,7 +1311,7 @@
     "correct": true,
     "prefill": 99,
     "generated": 4,
-    "ms": 583.6
+    "ms": 667.5
    }
   },
   {
@@ -1323,10 +1323,10 @@
     ],
     "correct": true,
     "head": "multilabel_margin",
-    "prefill": 164,
+    "prefill": 124,
     "generated": 0,
-    "ms": 630.4,
-    "confidence": 0.8845
+    "ms": 560.1,
+    "confidence": 0.9815
    },
    "write": {
     "raw": "praise",
@@ -1336,7 +1336,7 @@
     "correct": true,
     "prefill": 93,
     "generated": 3,
-    "ms": 466.0
+    "ms": 506.3
    }
   },
   {
@@ -1349,10 +1349,10 @@
     ],
     "correct": true,
     "head": "multilabel_margin",
-    "prefill": 171,
+    "prefill": 131,
     "generated": 0,
-    "ms": 786.7,
-    "confidence": 0.6758
+    "ms": 579.9,
+    "confidence": 0.8477
    },
    "write": {
     "raw": "refund request",
@@ -1362,7 +1362,7 @@
     "correct": false,
     "prefill": 100,
     "generated": 3,
-    "ms": 482.6
+    "ms": 538.9
    }
   },
   {
@@ -1374,10 +1374,10 @@
     ],
     "correct": true,
     "head": "multilabel_margin",
-    "prefill": 169,
+    "prefill": 129,
     "generated": 0,
-    "ms": 652.5,
-    "confidence": 0.6784
+    "ms": 586.7,
+    "confidence": 0.8565
    },
    "write": {
     "raw": "damage",
@@ -1387,7 +1387,7 @@
     "correct": true,
     "prefill": 98,
     "generated": 2,
-    "ms": 359.9
+    "ms": 395.4
    }
   },
   {
@@ -1397,10 +1397,10 @@
     "answer": [],
     "correct": false,
     "head": "multilabel_margin",
-    "prefill": 166,
+    "prefill": 126,
     "generated": 0,
-    "ms": 634.5,
-    "confidence": 0.5713
+    "ms": 615.8,
+    "confidence": 0.7559
    },
    "write": {
     "raw": "delay",
@@ -1410,7 +1410,7 @@
     "correct": true,
     "prefill": 95,
     "generated": 2,
-    "ms": 373.1
+    "ms": 367.1
    }
   },
   {
@@ -1424,10 +1424,10 @@
     ],
     "correct": true,
     "head": "multilabel_margin",
-    "prefill": 169,
+    "prefill": 129,
     "generated": 0,
-    "ms": 544.9,
-    "confidence": 0.3939
+    "ms": 563.8,
+    "confidence": 0.5981
    },
    "write": {
     "raw": "damage, refund request, delay",
@@ -1439,7 +1439,7 @@
     "correct": true,
     "prefill": 98,
     "generated": 7,
-    "ms": 936.7
+    "ms": 999.5
    }
   },
   {
@@ -1451,10 +1451,10 @@
     ],
     "correct": false,
     "head": "multilabel_margin",
-    "prefill": 169,
+    "prefill": 129,
     "generated": 0,
-    "ms": 546.8,
-    "confidence": 0.4832
+    "ms": 598.0,
+    "confidence": 0.7617
    },
    "write": {
     "raw": "refund request",
@@ -1464,19 +1464,19 @@
     "correct": false,
     "prefill": 98,
     "generated": 3,
-    "ms": 473.9
+    "ms": 502.5
    }
   },
   {
    "kind": "extract",
    "id": "e01",
    "read": {
-    "answer": "smashed",
+    "answer": "The replacement mug still arrived smashed. The box was crushed",
     "correct": true,
     "head": "extractive_decode",
-    "prefill": 91,
-    "generated": 3,
-    "ms": 462.1,
+    "prefill": 77,
+    "generated": 14,
+    "ms": 1861.7,
     "confidence": null
    },
    "write": {
@@ -1485,7 +1485,7 @@
     "correct": true,
     "prefill": 82,
     "generated": 3,
-    "ms": 491.2
+    "ms": 489.7
    }
   },
   {
@@ -1495,9 +1495,9 @@
     "answer": "RF-88213",
     "correct": true,
     "head": "extractive_decode",
-    "prefill": 93,
+    "prefill": 79,
     "generated": 8,
-    "ms": 1031.4,
+    "ms": 1117.3,
     "confidence": null
    },
    "write": {
@@ -1506,7 +1506,7 @@
     "correct": true,
     "prefill": 84,
     "generated": 8,
-    "ms": 1021.1
+    "ms": 1094.2
    }
   },
   {
@@ -1516,9 +1516,9 @@
     "answer": "C22",
     "correct": true,
     "head": "extractive_decode",
-    "prefill": 95,
+    "prefill": 81,
     "generated": 4,
-    "ms": 574.9,
+    "ms": 654.4,
     "confidence": null
    },
    "write": {
@@ -1527,7 +1527,7 @@
     "correct": true,
     "prefill": 86,
     "generated": 4,
-    "ms": 583.6
+    "ms": 612.3
    }
   },
   {
@@ -1537,9 +1537,9 @@
     "answer": "M. Ortiz",
     "correct": true,
     "head": "extractive_decode",
-    "prefill": 98,
+    "prefill": 84,
     "generated": 4,
-    "ms": 577.9,
+    "ms": 603.8,
     "confidence": null
    },
    "write": {
@@ -1548,19 +1548,19 @@
     "correct": true,
     "prefill": 89,
     "generated": 4,
-    "ms": 579.1
+    "ms": 647.5
    }
   },
   {
    "kind": "extract",
    "id": "e05",
    "read": {
-    "answer": "total: $1,240.00",
+    "answer": "Invoice 2291 total: $1,240.00",
     "correct": true,
     "head": "extractive_decode",
-    "prefill": 104,
-    "generated": 12,
-    "ms": 1506.9,
+    "prefill": 90,
+    "generated": 18,
+    "ms": 2352.1,
     "confidence": null
    },
    "write": {
@@ -1569,19 +1569,19 @@
     "correct": true,
     "prefill": 95,
     "generated": 19,
-    "ms": 2299.2
+    "ms": 2475.9
    }
   },
   {
    "kind": "extract",
    "id": "e06",
    "read": {
-    "answer": "Dallas",
+    "answer": "Dallas; Reno",
     "correct": true,
     "head": "extractive_decode",
-    "prefill": 92,
-    "generated": 2,
-    "ms": 346.8,
+    "prefill": 78,
+    "generated": 4,
+    "ms": 606.9,
     "confidence": null
    },
    "write": {
@@ -1590,7 +1590,7 @@
     "correct": true,
     "prefill": 83,
     "generated": 2,
-    "ms": 336.6
+    "ms": 359.1
    }
   },
   {
@@ -1616,18 +1616,17 @@
      },
      "flags": {
       "answer": [
-       "damage",
-       "refund request"
+       "damage"
       ],
-      "correct": false,
+      "correct": true,
       "head": "multilabel_margin"
      }
     },
-    "correct_fields": 3,
-    "prefill": 355,
-    "shared": 92,
+    "correct_fields": 4,
+    "prefill": 341,
+    "shared": 85,
     "generated": 0,
-    "ms": 1332.2
+    "ms": 1363.6
    },
    "write_json": {
     "raw": "{\"refund_issued\": true, \"need\": \"a replacement item\", \"stars\": 2, \"flags\": [\"damage\"]}",
@@ -1654,7 +1653,7 @@
     "correct_fields": 4,
     "prefill": 203,
     "generated": 28,
-    "ms": 3451.3
+    "ms": 3744.2
    },
    "write_separate": {
     "fields": {
@@ -1681,7 +1680,7 @@
     "correct_fields": 3,
     "prefill": 490,
     "generated": 13,
-    "ms": 2145.0
+    "ms": 2335.3
    }
   },
   {
@@ -1691,8 +1690,8 @@
    "read": {
     "fields": {
      "locked_out": {
-      "answer": false,
-      "correct": false,
+      "answer": true,
+      "correct": true,
       "head": "binary_margin"
      },
      "queue": {
@@ -1706,11 +1705,11 @@
       "head": "ordinal_expectation"
      }
     },
-    "correct_fields": 2,
-    "prefill": 220,
-    "shared": 79,
+    "correct_fields": 3,
+    "prefill": 206,
+    "shared": 72,
     "generated": 0,
-    "ms": 620.9
+    "ms": 637.1
    },
    "write_json": {
     "raw": "{\"locked_out\": true, \"queue\": \"account access\", \"priority\": 2}",
@@ -1731,7 +1730,7 @@
     "correct_fields": 3,
     "prefill": 173,
     "generated": 20,
-    "ms": 2536.2
+    "ms": 2818.1
    },
    "write_separate": {
     "fields": {
@@ -1751,7 +1750,7 @@
     "correct_fields": 2,
     "prefill": 332,
     "generated": 7,
-    "ms": 1222.2
+    "ms": 1348.4
    }
   },
   {
@@ -1785,10 +1784,10 @@
      }
     },
     "correct_fields": 3,
-    "prefill": 334,
-    "shared": 72,
+    "prefill": 320,
+    "shared": 65,
     "generated": 0,
-    "ms": 1066.9
+    "ms": 1087.9
    },
    "write_json": {
     "raw": "{\"delivered\": false, \"need\": \"a tracking update\", \"stars\": 1, \"flags\": [\"refund request\", \"delay\"]}",
@@ -1816,7 +1815,7 @@
     "correct_fields": 3,
     "prefill": 181,
     "generated": 31,
-    "ms": 3796.1
+    "ms": 4301.9
    },
    "write_separate": {
     "fields": {
@@ -1843,7 +1842,7 @@
     "correct_fields": 3,
     "prefill": 409,
     "generated": 13,
-    "ms": 2010.5
+    "ms": 2321.8
    }
   },
   {
@@ -1876,10 +1875,10 @@
      }
     },
     "correct_fields": 4,
-    "prefill": 336,
-    "shared": 71,
+    "prefill": 322,
+    "shared": 64,
     "generated": 0,
-    "ms": 976.6
+    "ms": 1014.5
    },
    "write_json": {
     "raw": "{\"wants_refund\": false, \"tone\": \"grateful and satisfied\", \"stars\": 5, \"flags\": [\"refund\", \"praise\"]}",
@@ -1907,7 +1906,7 @@
     "correct_fields": 3,
     "prefill": 187,
     "generated": 34,
-    "ms": 4127.6
+    "ms": 4729.9
    },
    "write_separate": {
     "fields": {
@@ -1933,7 +1932,7 @@
     "correct_fields": 4,
     "prefill": 408,
     "generated": 12,
-    "ms": 1871.7
+    "ms": 2105.1
    }
   },
   {
@@ -1959,10 +1958,10 @@
      }
     },
     "correct_fields": 2,
-    "prefill": 218,
-    "shared": 72,
+    "prefill": 204,
+    "shared": 65,
     "generated": 0,
-    "ms": 583.6
+    "ms": 615.1
    },
    "write_json": {
     "raw": "{\"existing_customer_issue\": false, \"queue\": \"sales inquiry\", \"priority\": 2}",
@@ -1983,7 +1982,7 @@
     "correct_fields": 2,
     "prefill": 172,
     "generated": 21,
-    "ms": 2584.4
+    "ms": 2906.2
    },
    "write_separate": {
     "fields": {
@@ -2003,7 +2002,7 @@
     "correct_fields": 2,
     "prefill": 316,
     "generated": 7,
-    "ms": 1166.0
+    "ms": 1351.7
    }
   },
   {
@@ -2029,7 +2028,6 @@
      },
      "flags": {
       "answer": [
-       "damage",
        "refund request",
        "delay"
       ],
@@ -2038,10 +2036,10 @@
      }
     },
     "correct_fields": 3,
-    "prefill": 341,
-    "shared": 76,
+    "prefill": 327,
+    "shared": 69,
     "generated": 0,
-    "ms": 1239.9
+    "ms": 1103.7
    },
    "write_json": {
     "raw": "{\"damaged\": false, \"queue\": \"billing and payments\", \"stars\": 3, \"flags\": [\"refund request\", \"delay\"]}",
@@ -2069,7 +2067,7 @@
     "correct_fields": 2,
     "prefill": 187,
     "generated": 31,
-    "ms": 3736.8
+    "ms": 4245.2
    },
    "write_separate": {
     "fields": {
@@ -2097,7 +2095,7 @@
     "correct_fields": 3,
     "prefill": 426,
     "generated": 15,
-    "ms": 2264.8
+    "ms": 2526.2
    }
   }
  ],
@@ -2108,9 +2106,9 @@
    "zero_answer": "grateful",
    "zero_p_label": 0.9998,
    "fit_answer": "grateful",
-   "fit_p_label": 0.9998,
-   "fit_chosen": "zero_shot",
-   "fit_ms": 2744.6
+   "fit_p_label": 1.0,
+   "fit_chosen": "ridge_probe",
+   "fit_ms": 1932.6
   },
   {
    "context": "Really appreciate you fixing this so fast.",
@@ -2118,29 +2116,29 @@
    "zero_answer": "grateful",
    "zero_p_label": 0.9998,
    "fit_answer": "grateful",
-   "fit_p_label": 0.9998,
-   "fit_chosen": "zero_shot",
-   "fit_ms": 2683.4
+   "fit_p_label": 1.0,
+   "fit_chosen": "ridge_probe",
+   "fit_ms": 1655.4
   },
   {
    "context": "Thank you, that was quick and painless.",
    "label": "grateful",
    "zero_answer": "grateful",
-   "zero_p_label": 0.9996,
+   "zero_p_label": 0.9995,
    "fit_answer": "grateful",
-   "fit_p_label": 0.9996,
-   "fit_chosen": "zero_shot",
-   "fit_ms": 2641.7
+   "fit_p_label": 1.0,
+   "fit_chosen": "ridge_probe",
+   "fit_ms": 1682.5
   },
   {
    "context": "You went above and beyond. Much appreciated.",
    "label": "grateful",
    "zero_answer": "grateful",
-   "zero_p_label": 0.9996,
+   "zero_p_label": 0.9995,
    "fit_answer": "grateful",
-   "fit_p_label": 0.9996,
-   "fit_chosen": "zero_shot",
-   "fit_ms": 2633.7
+   "fit_p_label": 1.0,
+   "fit_chosen": "ridge_probe",
+   "fit_ms": 1679.7
   },
   {
    "context": "Got the replacement today. Perfect. Thank you!",
@@ -2148,9 +2146,9 @@
    "zero_answer": "grateful",
    "zero_p_label": 0.9996,
    "fit_answer": "grateful",
-   "fit_p_label": 0.9996,
-   "fit_chosen": "zero_shot",
-   "fit_ms": 2677.6
+   "fit_p_label": 1.0,
+   "fit_chosen": "ridge_probe",
+   "fit_ms": 2222.2
   },
   {
    "context": "Appreciate the quick refund, that helped a lot.",
@@ -2158,19 +2156,19 @@
    "zero_answer": "grateful",
    "zero_p_label": 0.9998,
    "fit_answer": "grateful",
-   "fit_p_label": 0.9998,
-   "fit_chosen": "zero_shot",
-   "fit_ms": 2630.7
+   "fit_p_label": 1.0,
+   "fit_chosen": "ridge_probe",
+   "fit_ms": 2370.8
   },
   {
    "context": "Kudos to your team, the issue is resolved.",
    "label": "grateful",
    "zero_answer": "grateful",
-   "zero_p_label": 0.9995,
+   "zero_p_label": 0.9986,
    "fit_answer": "grateful",
-   "fit_p_label": 0.9995,
-   "fit_chosen": "zero_shot",
-   "fit_ms": 2692.4
+   "fit_p_label": 1.0,
+   "fit_chosen": "ridge_probe",
+   "fit_ms": 1827.0
   },
   {
    "context": "That was exactly the help I needed. Thanks again.",
@@ -2178,89 +2176,254 @@
    "zero_answer": "grateful",
    "zero_p_label": 0.9996,
    "fit_answer": "grateful",
-   "fit_p_label": 0.9996,
-   "fit_chosen": "zero_shot",
-   "fit_ms": 2670.2
+   "fit_p_label": 1.0,
+   "fit_chosen": "ridge_probe",
+   "fit_ms": 1703.0
   },
   {
    "context": "This is unacceptable and I want a manager.",
    "label": "angry",
    "zero_answer": "angry",
-   "zero_p_label": 0.9963,
+   "zero_p_label": 0.9926,
    "fit_answer": "angry",
-   "fit_p_label": 0.998,
-   "fit_chosen": "affine",
-   "fit_ms": 2809.4
+   "fit_p_label": 1.0,
+   "fit_chosen": "ridge_probe",
+   "fit_ms": 3075.2
   },
   {
    "context": "Furious. Nothing has been resolved after three weeks.",
    "label": "angry",
    "zero_answer": "angry",
-   "zero_p_label": 0.9864,
+   "zero_p_label": 0.9782,
    "fit_answer": "angry",
-   "fit_p_label": 0.9916,
-   "fit_chosen": "affine",
-   "fit_ms": 2788.5
+   "fit_p_label": 1.0,
+   "fit_chosen": "ridge_probe",
+   "fit_ms": 1772.4
   },
   {
    "context": "Stop ignoring me. This is outrageous.",
    "label": "angry",
    "zero_answer": "angry",
-   "zero_p_label": 0.9971,
+   "zero_p_label": 0.9928,
    "fit_answer": "angry",
-   "fit_p_label": 0.9982,
-   "fit_chosen": "affine",
-   "fit_ms": 2782.5
+   "fit_p_label": 1.0,
+   "fit_chosen": "ridge_probe",
+   "fit_ms": 1801.3
   },
   {
    "context": "I am done with your company. Worst service ever.",
    "label": "angry",
    "zero_answer": "angry",
-   "zero_p_label": 0.9945,
+   "zero_p_label": 0.9917,
    "fit_answer": "angry",
-   "fit_p_label": 0.9959,
-   "fit_chosen": "affine",
-   "fit_ms": 2746.8
+   "fit_p_label": 1.0,
+   "fit_chosen": "ridge_probe",
+   "fit_ms": 1735.2
   },
   {
    "context": "How many times do I have to ask? Fix it now.",
    "label": "angry",
    "zero_answer": "angry",
-   "zero_p_label": 0.8704,
+   "zero_p_label": 0.7608,
    "fit_answer": "angry",
-   "fit_p_label": 0.8617,
-   "fit_chosen": "zero_shot",
-   "fit_ms": 2689.5
+   "fit_p_label": 1.0,
+   "fit_chosen": "ridge_probe",
+   "fit_ms": 1709.0
   },
   {
    "context": "Your agent hung up on me. I am beyond frustrated.",
    "label": "angry",
    "zero_answer": "angry",
-   "zero_p_label": 0.9952,
+   "zero_p_label": 0.9911,
    "fit_answer": "angry",
-   "fit_p_label": 0.9953,
-   "fit_chosen": "zero_shot",
-   "fit_ms": 2728.4
+   "fit_p_label": 1.0,
+   "fit_chosen": "ridge_probe",
+   "fit_ms": 1833.7
   },
   {
    "context": "Absolutely ridiculous. Refund me today or I dispute the charge.",
    "label": "angry",
    "zero_answer": "angry",
-   "zero_p_label": 0.9935,
+   "zero_p_label": 0.9838,
    "fit_answer": "angry",
-   "fit_p_label": 0.9945,
-   "fit_chosen": "zero_shot",
-   "fit_ms": 2937.6
+   "fit_p_label": 1.0,
+   "fit_chosen": "ridge_probe",
+   "fit_ms": 1787.4
   },
   {
    "context": "I have never been treated this badly by a support team.",
    "label": "angry",
    "zero_answer": "angry",
-   "zero_p_label": 0.987,
+   "zero_p_label": 0.8927,
    "fit_answer": "angry",
-   "fit_p_label": 0.9862,
-   "fit_chosen": "zero_shot",
-   "fit_ms": 2684.0
+   "fit_p_label": 0.9985,
+   "fit_chosen": "ridge_probe",
+   "fit_ms": 2021.5
   }
- ]
+ ],
+ "stored_head": {
+  "exit_layer": 12,
+  "num_layers": 24,
+  "chosen": "ridge_probe",
+  "layer_scan": [
+   {
+    "layer": 4,
+    "loo_accuracy": 0.125,
+    "loo_nll": 0.7979
+   },
+   {
+    "layer": 8,
+    "loo_accuracy": 0.875,
+    "loo_nll": 0.4403
+   },
+   {
+    "layer": 12,
+    "loo_accuracy": 1.0,
+    "loo_nll": 0.0
+   }
+  ],
+  "full_depth_loo": {
+   "accuracy": 1.0,
+   "nll": 0.0046
+  },
+  "fit_ms": 1719.5,
+  "rows": [
+   {
+    "label": "grateful",
+    "zero": {
+     "answer": "grateful",
+     "correct": true,
+     "ms": 237.3,
+     "depth": null,
+     "head": "letter_slice"
+    },
+    "stored": {
+     "answer": "grateful",
+     "correct": true,
+     "ms": 109.1,
+     "depth": 12,
+     "head": "ridge_probe"
+    }
+   },
+   {
+    "label": "grateful",
+    "zero": {
+     "answer": "grateful",
+     "correct": true,
+     "ms": 239.7,
+     "depth": null,
+     "head": "letter_slice"
+    },
+    "stored": {
+     "answer": "grateful",
+     "correct": true,
+     "ms": 111.0,
+     "depth": 12,
+     "head": "ridge_probe"
+    }
+   },
+   {
+    "label": "grateful",
+    "zero": {
+     "answer": "grateful",
+     "correct": true,
+     "ms": 236.6,
+     "depth": null,
+     "head": "letter_slice"
+    },
+    "stored": {
+     "answer": "grateful",
+     "correct": true,
+     "ms": 99.7,
+     "depth": 12,
+     "head": "ridge_probe"
+    }
+   },
+   {
+    "label": "grateful",
+    "zero": {
+     "answer": "grateful",
+     "correct": true,
+     "ms": 233.6,
+     "depth": null,
+     "head": "letter_slice"
+    },
+    "stored": {
+     "answer": "grateful",
+     "correct": true,
+     "ms": 108.7,
+     "depth": 12,
+     "head": "ridge_probe"
+    }
+   },
+   {
+    "label": "angry",
+    "zero": {
+     "answer": "angry",
+     "correct": true,
+     "ms": 239.9,
+     "depth": null,
+     "head": "letter_slice"
+    },
+    "stored": {
+     "answer": "angry",
+     "correct": true,
+     "ms": 108.0,
+     "depth": 12,
+     "head": "ridge_probe"
+    }
+   },
+   {
+    "label": "angry",
+    "zero": {
+     "answer": "angry",
+     "correct": true,
+     "ms": 250.1,
+     "depth": null,
+     "head": "letter_slice"
+    },
+    "stored": {
+     "answer": "angry",
+     "correct": true,
+     "ms": 114.7,
+     "depth": 12,
+     "head": "ridge_probe"
+    }
+   },
+   {
+    "label": "angry",
+    "zero": {
+     "answer": "angry",
+     "correct": true,
+     "ms": 243.3,
+     "depth": null,
+     "head": "letter_slice"
+    },
+    "stored": {
+     "answer": "angry",
+     "correct": true,
+     "ms": 100.3,
+     "depth": 12,
+     "head": "ridge_probe"
+    }
+   },
+   {
+    "label": "angry",
+    "zero": {
+     "answer": "angry",
+     "correct": true,
+     "ms": 235.3,
+     "depth": null,
+     "head": "letter_slice"
+    },
+    "stored": {
+     "answer": "grateful",
+     "correct": false,
+     "ms": 105.6,
+     "depth": 12,
+     "head": "ridge_probe"
+    }
+   }
+  ]
+ }
 }

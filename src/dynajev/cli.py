@@ -8,7 +8,7 @@ import os
 
 from dynajev.compile import DecideIn
 from dynajev.engine import Dynajev
-from dynajev.trunk import Trunk
+from dynajev.backends import load_backend
 
 
 def main() -> None:
@@ -43,8 +43,7 @@ def main() -> None:
     if args.schema:
         with open(args.schema, encoding="utf-8") as handle:
             schema = json.load(handle)
-    trunk = Trunk.load(args.model)
-    result = Dynajev(trunk).decide(
+    result = Dynajev(load_backend(args.model)).decide(
         DecideIn.model_validate(
             {
                 "context": args.context,

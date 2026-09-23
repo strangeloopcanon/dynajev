@@ -32,7 +32,8 @@ def test_single_token_labels_slice_the_unembedding():
         WordEncoder(),
     )
     assert bound.head == "vocab_slice"
-    assert bound.nodes[0].groups[0] != bound.nodes[0].groups[1]
+    assert bound.reads[0].groups[0] != bound.reads[0].groups[1]
+    assert bound.combine.op == "softmax"
 
 
 def test_phrases_become_a_letter_head():
@@ -62,7 +63,8 @@ def test_margin_strategy_is_one_boolean_per_option():
         WordEncoder(),
     )
     assert bound.head == "option_margin"
-    assert len(bound.nodes) == 3
+    assert len(bound.branches) == 3
+    assert bound.combine.op == "margin_softmax"
 
 
 def test_flags_do_not_share_a_softmax_node():
@@ -71,4 +73,5 @@ def test_flags_do_not_share_a_softmax_node():
         WordEncoder(),
     )
     assert bound.head == "multilabel_margin"
-    assert len(bound.nodes) == 2
+    assert len(bound.branches) == 2
+    assert bound.combine.op == "flags"

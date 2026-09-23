@@ -24,7 +24,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from dynajev.score import nll, softmax
+from dynajev.score import nll
 
 _MIN_T = 0.5
 _MAX_T = 5.0
@@ -134,13 +134,6 @@ def select_fit(hidden: np.ndarray, logits: np.ndarray, labels: np.ndarray, lam: 
     )
 
 
-def apply_ridge(hidden: np.ndarray, decision: FitDecision) -> list[float]:
-    if decision.weight is None or decision.ridge_bias is None or decision.mu is None or decision.sd is None:
-        raise ValueError("ridge weights are missing")
-    z = (np.asarray(hidden, dtype=np.float64) - decision.mu) / decision.sd
-    return (decision.weight @ z + decision.ridge_bias).tolist()
-
-
 def apply_affine(logits: list[float], temperature: float, bias: np.ndarray | None) -> list[float]:
     row = np.asarray(logits, dtype=np.float64) / temperature
     if bias is not None:
@@ -234,17 +227,128 @@ def _ridge_full_and_loo(
 
 
 def _solve(z: np.ndarray, labels: np.ndarray, n_classes: int, lam: float) -> tuple[np.ndarray, np.ndarray]:
-    n, dim = z.shape
+    """Ridge regression onto one-hot targets with an unpenalized intercept.
+
+    Solved in the dual, (Zc Zc^T + lam I), which is n x n: a request carries
+    a handful of labeled states and the hidden state has thousands of dims.
+    """
+
+    n = z.shape[0]
     targets = np.zeros((n, n_classes), dtype=np.float64)
     targets[np.arange(n), labels] = 1.0
-    design = np.concatenate([z, np.ones((n, 1))], axis=1)
-    penalty = lam * np.eye(dim + 1)
-    penalty[-1, -1] = 0.0
-    beta = np.linalg.solve(design.T @ design + penalty, design.T @ targets)
-    weight = beta[:-1].T
-    bias = beta[-1]
+    z_mean = z.mean(axis=0)
+    t_mean = targets.mean(axis=0)
+    zc = z - z_mean
+    alpha = np.linalg.solve(zc @ zc.T + lam * np.eye(n), targets - t_mean)
+    weight = (zc.T @ alpha).T
+    bias = t_mean - weight @ z_mean
     return weight, bias
 
 
-def probabilities_from_logits(logits: list[float]) -> list[float]:
-    return softmax(logits)
+@dataclass
+class Probe:
+    """A ridge probe whose outputs are scaled into logits."""
+
+    weight: np.ndarray
+    bias: np.ndarray
+    mu: np.ndarray
+    sd: np.ndarray
+    scale: float
+    loo_nll: float
+    loo_accuracy: float
+
+
+_SCALES = np.geomspace(1.0, 16.0, 17)
+
+
+def ridge_probe(hidden: np.ndarray, labels: np.ndarray, n_classes: int, lam: float = 1.0) -> Probe:
+    """Fit a ridge probe and score it leave-one-out.
+
+    Ridge regression onto one-hot targets gives outputs near 0 and 1, which are
+    poor logits. One scale is chosen to minimize the leave-one-out log loss of
+    the scaled outputs; that makes the probe's loss comparable with the sliced
+    head's. The scale is picked on the same held-out predictions it is scored
+    on, so the reported loss is slightly optimistic; it is one parameter, and
+    it is capped at 16 so a perfectly separated handful of states does not
+    become certainty.
+    """
+
+    hidden = np.asarray(hidden, dtype=np.float64)
+    labels = np.asarray(labels, dtype=np.int64)
+    mu = hidden.mean(axis=0)
+    sd = hidden.std(axis=0)
+    sd = np.where(sd < 1e-6, 1.0, sd)
+    z = (hidden - mu) / sd
+    n = len(labels)
+    preds = np.zeros((n, n_classes))
+    for held in range(n):
+        train = np.ones(n, dtype=bool)
+        train[held] = False
+        weight, bias = _solve(z[train], labels[train], n_classes, lam)
+        preds[held] = weight @ z[held] + bias
+    accuracy = float(np.mean(np.argmax(preds, axis=1) == labels))
+    losses = [float(np.mean([nll((scale * row).tolist(), int(y), 1.0) for row, y in zip(preds, labels)])) for scale in _SCALES]
+    best = int(np.argmin(losses))
+    weight, bias = _solve(z, labels, n_classes, lam)
+    return Probe(weight, bias, mu, sd, float(_SCALES[best]), losses[best], accuracy)
+
+
+def candidate_layers(num_layers: int) -> list[int]:
+    """Every fourth layer and the last one (every layer on a stack shorter than 8)."""
+
+    step = 4 if num_layers >= 8 else 1
+    return sorted({*range(step, num_layers, step), num_layers})
+
+
+# How much worse (in nats of leave-one-out log loss) a shallower probe may be
+# than the full-depth head and still be chosen.
+EXIT_NLL_TOLERANCE = 0.1
+
+
+@dataclass
+class ExitChoice:
+    layer: int | None
+    probe: Probe | None
+    full_accuracy: float
+    full_nll: float
+    scan: list[dict[str, float]]
+    note: str
+
+
+def choose_exit(
+    per_layer: dict[int, np.ndarray], labels: np.ndarray, n_classes: int, full: FitDecision, num_layers: int
+) -> ExitChoice:
+    """The shallowest layer whose probe holds up against the full-depth head.
+
+    A layer is accepted when its probe's leave-one-out accuracy is at least the
+    full-depth head's and its leave-one-out loss is at most
+    `EXIT_NLL_TOLERANCE` nats worse. The full-depth head is whatever
+    `select_fit` chose: the sliced unembedding, its affine correction, or a
+    ridge probe on the final layer.
+    """
+
+    labels = np.asarray(labels, dtype=np.int64)
+    if full.chosen == "affine":
+        full_acc, full_nll = full.affine_loo_accuracy, full.affine_loo_nll
+    elif full.chosen == "ridge_probe" and full.ridge_loo_accuracy is not None and full.ridge_loo_nll is not None:
+        full_acc, full_nll = full.ridge_loo_accuracy, full.ridge_loo_nll
+    else:
+        full_acc, full_nll = full.zero_shot_loo_accuracy, full.zero_shot_loo_nll
+    scan: list[dict[str, float]] = []
+    if len(labels) < max(4, n_classes):
+        return ExitChoice(None, None, full_acc, full_nll, scan, "Too few labeled states to compare layers.")
+    for layer in sorted(k for k in per_layer if k < num_layers):
+        probe = ridge_probe(per_layer[layer], labels, n_classes)
+        scan.append({"layer": layer, "loo_accuracy": round(probe.loo_accuracy, 4), "loo_nll": round(probe.loo_nll, 4)})
+        if probe.loo_accuracy >= full_acc and probe.loo_nll <= full_nll + EXIT_NLL_TOLERANCE:
+            return ExitChoice(
+                layer,
+                probe,
+                full_acc,
+                full_nll,
+                scan,
+                f"A ridge probe after layer {layer} of {num_layers} matched the full-depth head under leave-one-out "
+                f"(accuracy {probe.loo_accuracy:.2f} vs {full_acc:.2f}, loss {probe.loo_nll:.3f} vs {full_nll:.3f}), "
+                f"so this field runs {layer} layers and reads that probe.",
+            )
+    return ExitChoice(None, None, full_acc, full_nll, scan, "No shallower layer matched the full-depth head; the full stack runs.")

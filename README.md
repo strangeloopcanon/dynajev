@@ -22,14 +22,14 @@ curl -s http://127.0.0.1:43124/api/decide -H 'content-type: application/json' -d
 
 ```json
 {
-  "refund": {"noul": 0.95},
-  "queue":  {"choice": "billing and payments", "confidence": 0.63},
-  "stars":  {"level": "2 stars", "score": 2.33},
-  "flags":  {"flags": ["damage"], "probabilities": {"damage": 0.77, "refund request": 0.19, "delay": 0.23, "praise": 0.05}}
+  "refund": {"noul": 0.96},
+  "queue":  {"choice": "billing and payments", "confidence": 0.64},
+  "stars":  {"level": "2 stars", "score": 2.05},
+  "flags":  {"flags": ["damage"], "probabilities": {"damage": 0.87, "refund request": 0.15, "delay": 0.14, "praise": 0.00}}
 }
 ```
 
-Abridged. The full response has every probability, the compiled head for each field, and token counts. Nothing above was generated.
+Abridged. The full response has every probability, token counts, and a `plan`: the branches built for each question, which prompt segments were shared, how many layers ran, and how the scores were combined. Nothing above was generated.
 
 ## Question types
 
@@ -40,9 +40,13 @@ Abridged. The full response has every probability, the compiled head for each fi
 | `score` | softmax over digit rows; returns the level and the expected score |
 | `flags` | one independent yes/no branch per flag |
 | `quote` | short decode, checked verbatim against the text |
-| `open` | ordinary chat completion (the only type that pays for generation) |
+| `open` | ordinary chat completion |
 
-All closed questions about one text share a single prefill and branch at the answer. Pass a few labeled `examples` to fit a per-class bias or a small probe; it is kept only if held-out accuracy improves. `POST /api/decide_batch` runs one question set over many texts.
+The prompts of one request form a token trie; each shared segment is prefilled once when that is cheaper than recomputing it, and the rest run as one batch. `POST /api/decide_batch` runs one question set over many texts.
+
+A question can depend on another: `depends_on: {"question": "damaged", "when": true}` skips it unless the answer matches, and `include_answers: ["damaged"]` continues from the parent's cached conversation so the model sees that answer. A `noul` with `criteria: {"true": "...", "false": "..."}` judges each description separately instead of reading one Yes-versus-No margin.
+
+Pass a few labeled `examples` to fit a per-class bias or a ridge probe; it is kept only if leave-one-out accuracy holds. The fit also checks shallower layers and, if a probe there does as well, the question runs only that many layers. `save_heads: true` (or `POST /api/heads/fit`) keeps the head, keyed by the question, labels and model, and later requests with the same question use it.
 
 ## Results
 
@@ -51,12 +55,12 @@ Qwen3.5-2B on a 4-core CPU, same model answering the same questions both ways. D
 | | Dynajev | Model writes the answer |
 | --- | --- | --- |
 | Accuracy, 74 labeled questions | 71 | 72 |
-| Median latency, one question | 259 ms | 369 ms |
-| Six multi-field schemas | 5.8 s | 20.2 s |
-| Throughput, 48 texts × 4 questions | 4.3 decisions/s | 0.9 decisions/s |
+| Median latency, one question | 265 ms | 408 ms |
+| Six multi-field schemas | 5.8 s | 22.7 s |
+| Throughput, 48 texts × 4 questions | 4.0 decisions/s | 0.8 decisions/s |
 | Generated tokens, 74 questions | 0 | 222 |
 
-The gain is speed and structure, not accuracy or total tokens. Both paths read the same first-token decision, and the prompt scaffolding costs about what the written answer would have. GPU numbers are not measured yet.
+The gain is speed and structure, not accuracy or total tokens. Both paths read the same first-token decision, and the prompt scaffolding costs about what the written answer would have. A stored tone head that exits after layer 12 of 24 answers in 108 ms instead of 238 ms, but missed one of eight states the full-depth read got right. GPU numbers are not measured yet.
 
 ## Run it
 
@@ -91,8 +95,8 @@ Dynajev is an extension of existing ideas, not a new method. The closest project
 | [SGLang](https://docs.sglang.io/docs/references/frontend/choices_methods), [guidance](https://github.com/guidance-ai/guidance), [LMQL](https://lmql.ai/) | stock | option scoring, chosen by the programmer | SGLang |
 | [decider](https://github.com/Mapika/decider), [Laya](https://huggingface.co/convaiinnovations/laya), [YOFO](https://arxiv.org/abs/2511.16600), Jev | trained | one learned format | packed slots or one pass |
 
-What Dynajev adds on top: the head is chosen from how the labels tokenize (direct option tokens when each option is one token, letters otherwise); `noul` is a Yes-versus-No margin; `flags`, `quote` and `open` share the same prefill as the closed questions; a request can carry labeled examples and get a bias or ridge-probe correction that is kept only if leave-one-out accuracy holds; prefills are cached across requests; and there is a measured comparison against the same model writing its answers. Reading label-word logits goes back to [PET](https://arxiv.org/abs/2001.07676), and the bias fit is essentially [contextual calibration](https://arxiv.org/abs/2102.09690).
+What Dynajev adds on top: the head is chosen from how the labels tokenize; every question type shares one trie prefill; questions can depend on each other; labeled examples give a correction, and possibly an earlier exit layer, kept only if leave-one-out accuracy holds and stored for reuse; and there is a measured comparison against the same model writing its answers. Reading label-word logits goes back to [PET](https://arxiv.org/abs/2001.07676), and the bias fit is essentially [contextual calibration](https://arxiv.org/abs/2102.09690).
 
-How requests compile, batching modes, server settings, and model support: [`docs/details.md`](docs/details.md).
+The plan IR, trie cost model, early exit, stored heads, backend interface, and server settings: [`docs/details.md`](docs/details.md).
 
 MIT licensed.

@@ -4,13 +4,13 @@ import json
 
 from dynajev.compile import DecideIn
 from dynajev.engine import Dynajev
-from dynajev.trunk import Trunk
+from dynajev.backends.hf import HFBackend
 
 MODEL = "Qwen/Qwen3.5-2B"
 
 
 def main() -> None:
-    trunk = Trunk.load(MODEL)
+    trunk = HFBackend.load(MODEL)
     engine = Dynajev(trunk)
     requests = [
         DecideIn(
@@ -48,6 +48,7 @@ def main() -> None:
                         "quote": {
                             "type": "string",
                             "description": "Quote the short span that says the mug arrived smashed.",
+                            "x-readout": "extract",
                         },
                     },
                 },

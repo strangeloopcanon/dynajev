@@ -1,6 +1,7 @@
 import numpy as np
 
-from dynajev.fit import apply_affine, apply_ridge, select_fit
+from dynajev.fit import apply_affine, select_fit
+from dynajev.heads import HeadParams
 
 
 def test_ridge_replaces_a_head_with_no_logit_signal():
@@ -21,7 +22,7 @@ def test_ridge_replaces_a_head_with_no_logit_signal():
     assert decision.chosen == "ridge_probe"
     assert decision.ridge_loo_nll is not None
     assert decision.ridge_loo_nll < decision.zero_shot_loo_nll
-    scored = apply_ridge(hidden[0], decision)
+    scored = HeadParams.from_decision(decision, ["a", "b"]).ridge_logits(hidden[0])
     assert scored[0] > scored[1]
 
 
@@ -73,3 +74,34 @@ def test_three_examples_are_required():
     decision = select_fit(np.zeros((2, 3)), np.array([[1.0, 0.0], [0.0, 1.0]]), np.array([0, 1]))
     assert decision.chosen == "zero_shot"
     assert decision.weight is None
+
+
+def test_exit_picks_the_shallowest_layer_that_holds_up():
+    from dynajev.fit import candidate_layers, choose_exit
+
+    rng = np.random.default_rng(4)
+    labels = np.array([0, 1] * 5)
+    noise = rng.normal(size=(10, 16))
+    signal = noise.copy()
+    signal[:, :8] += np.where(labels == 1, 3.0, -3.0)[:, None]
+    logits = np.stack([np.where(labels == 0, 1.5, 0.0), np.where(labels == 1, 1.5, 0.0)], axis=1)
+    full = select_fit(signal, logits, labels, lam=1.0)
+    choice = choose_exit({4: noise, 8: signal, 12: signal}, labels, 2, full, 16)
+    assert choice.layer == 8
+    assert [row["layer"] for row in choice.scan] == [4, 8]
+    assert choice.scan[0]["loo_accuracy"] < 1.0
+    assert candidate_layers(24) == [4, 8, 12, 16, 20, 24]
+    assert candidate_layers(4) == [1, 2, 3, 4]
+
+
+def test_calibrated_probe_loss_is_comparable_to_logits():
+    from dynajev.fit import ridge_probe
+
+    rng = np.random.default_rng(5)
+    labels = np.array([0, 1] * 6)
+    hidden = rng.normal(size=(12, 64))
+    hidden[:, :16] += np.where(labels == 1, 3.0, -3.0)[:, None]
+    probe = ridge_probe(hidden, labels, 2)
+    assert probe.loo_accuracy == 1.0
+    assert probe.scale > 1.0
+    assert probe.loo_nll < 0.3

@@ -10,15 +10,6 @@ from __future__ import annotations
 import math
 
 
-def logsumexp(values: list[float]) -> float:
-    if not values:
-        raise ValueError("logsumexp requires at least one value")
-    peak = max(values)
-    if math.isinf(peak):
-        return peak
-    return peak + math.log(sum(math.exp(v - peak) for v in values))
-
-
 def softmax(logits: list[float]) -> list[float]:
     if not logits:
         return []
@@ -34,16 +25,6 @@ def sigmoid(x: float) -> float:
         return 1.0 / (1.0 + z)
     z = math.exp(x)
     return z / (1.0 + z)
-
-
-def group_logit(token_logits: list[float]) -> float:
-    """Score of a verbalizer: log-sum-exp of its surface forms.
-
-    Softmax across groups then equals the probability of each group under the
-    distribution renormalized over the union of the groups.
-    """
-
-    return logsumexp(token_logits)
 
 
 def binary_from_logits(no_logit: float, yes_logit: float) -> float:

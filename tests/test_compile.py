@@ -4,12 +4,16 @@ from dynajev.compile import DecideIn, compile_request
 from dynajev.errors import CompileError
 
 
-def test_auxiliary_question_routes_to_boolean():
-    jobs, notes = compile_request(
-        DecideIn(context="The refund went out Tuesday.", question="Has the refund already been sent?")
-    )
+def test_bare_question_needs_a_type():
+    with pytest.raises(CompileError, match="Set type"):
+        compile_request(DecideIn(context="The refund went out Tuesday.", question="Has the refund already been sent?"))
+
+
+def test_legacy_type_accepts_typed_names():
+    jobs, _ = compile_request(DecideIn(context="x", question="Has the refund been sent?", type="noul"))
     assert jobs[0].kind == "boolean"
-    assert any("yes/no" in note for note in notes)
+    jobs, _ = compile_request(DecideIn(context="x", question="Quote the refund line.", type="quote"))
+    assert jobs[0].kind == "extract"
 
 
 def test_options_route_to_a_choice():
@@ -36,15 +40,9 @@ def test_exclusive_false_routes_to_independent_flags():
     assert jobs[0].kind == "multilabel"
 
 
-def test_open_question_routes_to_plain_generation():
-    jobs, notes = compile_request(DecideIn(context="Anything.", question="What should we do next?"))
+def test_open_question_is_declared():
+    jobs, _ = compile_request(DecideIn(context="Anything.", question="What should we do next?", type="open"))
     assert [job.kind for job in jobs] == ["open"]
-    assert any("ordinary chat turn" in note for note in notes)
-
-
-def test_auxiliary_verb_still_wins_over_open():
-    jobs, _ = compile_request(DecideIn(context="Anything.", question="Is this urgent?"))
-    assert jobs[0].kind == "boolean"
 
 
 def test_schema_compiles_a_different_head_per_field():
@@ -68,7 +66,8 @@ def test_schema_compiles_a_different_head_per_field():
                             "description": "Which flags apply?",
                             "items": {"enum": ["legal", "billing"]},
                         },
-                        "quote": {"type": "string", "description": "Quote the sentence about the mug."},
+                        "quote": {"type": "string", "description": "Quote the sentence about the mug.", "x-readout": "extract"},
+                        "summary": {"type": "string", "description": "Quote nothing; summarise."},
                         "note": {"type": "string", "description": "A short internal note."},
                     },
                 },
@@ -76,7 +75,7 @@ def test_schema_compiles_a_different_head_per_field():
         )
     )
     kinds = [job.kind for job in jobs]
-    assert kinds == ["boolean", "categorical", "ordinal", "multilabel", "extract", "generate"]
+    assert kinds == ["boolean", "categorical", "ordinal", "multilabel", "extract", "generate", "generate"]
     assert jobs[2].score_tokens == ["0", "1", "2", "3"]
     assert any("share one prefill" in note for note in notes)
 

@@ -20,7 +20,7 @@ from pathlib import Path
 
 from dynajev.compile import DecideIn
 from dynajev.engine import Dynajev
-from dynajev.trunk import Trunk
+from dynajev.backends.hf import HFBackend
 
 QUESTIONS = {
     "refund": {"type": "noul", "instructions": "Does the customer want money back?"},
@@ -48,8 +48,7 @@ def main() -> None:
     contexts = contexts[: args.states]
     n_questions = len(QUESTIONS)
 
-    trunk = Trunk.load(args.model, device="cpu")
-    trunk.prefix_cache_size = 0
+    trunk = HFBackend.load(args.model, device="cpu")
     engine = Dynajev(trunk)
 
     # warm up

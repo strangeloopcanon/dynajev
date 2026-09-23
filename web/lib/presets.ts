@@ -28,7 +28,37 @@ export const SCHEMA = `{
     },
     "quote": {
       "type": "string",
-      "description": "Quote the short span that says the mug arrived smashed."
+      "description": "Quote the short span that says the mug arrived smashed.",
+      "x-readout": "extract"
+    }
+  }
+}`;
+
+export const QUESTIONS = `{
+  "damaged": { "type": "noul", "instructions": "Did the item arrive damaged?" },
+  "flags": {
+    "type": "flags",
+    "instructions": "Which of these describe the email?",
+    "options": ["grateful", "damaged", "legal"]
+  },
+  "remedy": {
+    "type": "choice",
+    "instructions": "What should we send?",
+    "options": ["a replacement", "a refund", "an apology only"],
+    "depends_on": { "question": "damaged", "when": true },
+    "include_answers": ["damaged"]
+  },
+  "legal_review": {
+    "type": "noul",
+    "instructions": "Does this need legal review?",
+    "depends_on": { "question": "flags", "when": "legal" }
+  },
+  "resolved": {
+    "type": "noul",
+    "instructions": "Has the customer's problem been resolved?",
+    "criteria": {
+      "true": "The customer says the problem is fixed and nothing more is needed.",
+      "false": "The customer still needs something done."
     }
   }
 }`;
@@ -44,6 +74,20 @@ export const PRESETS: Preset[] = [
     options: "",
     levels: "",
     schema: SCHEMA,
+    strategy: "auto",
+    examples: null,
+  },
+  {
+    id: "questions",
+    name: "Typed questions",
+    blurb: "Dependencies, one plan",
+    shape: "questions",
+    context: ticket,
+    question: "",
+    options: "",
+    levels: "",
+    schema: SCHEMA,
+    questions: QUESTIONS,
     strategy: "auto",
     examples: null,
   },

@@ -1,9 +1,12 @@
 import torch
 from transformers import Qwen3_5ForCausalLM, Qwen3_5TextConfig
 
-from dynajev.trunk import Trunk
+from dynajev.plan import Branch
+from dynajev.trie import TrieReader, build_trie
+from dynajev.backends.hf import HFBackend
 
 IDS = [7, 11, 3, 9, 4, 8, 2, 6, 5, 10]
+FULL = 4
 
 
 def _tiny_qwen35() -> Qwen3_5ForCausalLM:
@@ -14,7 +17,7 @@ def _tiny_qwen35() -> Qwen3_5ForCausalLM:
         vocab_size=128,
         hidden_size=32,
         intermediate_size=64,
-        num_hidden_layers=4,
+        num_hidden_layers=FULL,
         num_attention_heads=4,
         num_key_value_heads=2,
         head_dim=8,
@@ -30,56 +33,130 @@ def _tiny_qwen35() -> Qwen3_5ForCausalLM:
     return Qwen3_5ForCausalLM(config).eval()
 
 
-def test_branched_hidden_matches_a_full_forward_on_hybrid_deltanet():
-    model = _tiny_qwen35()
-    trunk = Trunk(model, _Stub(), model_id="tiny-qwen3.5")
-    full = trunk._hidden(IDS, None)
-    shared_hidden, past = trunk._forward(IDS[:6], None)
-    cloned = trunk._clone_past(past)
-    assert cloned is not None, "the cache clone fell back to a full forward"
-    branched = trunk._hidden(IDS[6:], cloned)
-    assert torch.allclose(full, branched, atol=1e-4, rtol=1e-4)
-    # Three branches of different lengths, one batched forward. Each must match
-    # its own full forward, and one of them is the shared prefix itself.
-    others = [IDS[:6] + [1, 2, 3], IDS[:6] + [12, 13, 14, 15, 16, 17, 18], IDS[:6]]
-    via_read, shared = trunk.read([IDS, *others])
-    assert shared == 6
-    assert len(via_read) == 4
-    assert torch.allclose(via_read[0], full, atol=1e-4, rtol=1e-4)
-    for hidden, seq in zip(via_read[1:], others):
-        assert torch.allclose(hidden, trunk._hidden(seq, None), atol=1e-4, rtol=1e-4)
-    assert trunk._branch_batch(past, [IDS[6:], [1, 2, 3]]) is not None, "batched branch fell back"
-    # The original cache must be untouched by the branch, so a second branch is clean.
-    again = trunk._hidden(IDS[6:], trunk._clone_past(past))
-    assert torch.allclose(full, again, atol=1e-4, rtol=1e-4)
-    assert shared_hidden.shape[-1] == model.config.hidden_size
+def _trunk() -> HFBackend:
+    return HFBackend(_tiny_qwen35(), _Stub(), model_id="tiny-qwen3.5")
 
 
-def test_prefix_cache_reuses_the_state_prefill_across_requests():
-    trunk = Trunk(_tiny_qwen35(), _Stub(), model_id="tiny-qwen3.5")
-    trunk.prefix_cache_size = 2
-    first, shared = trunk.read([IDS], anchor=6)
-    assert shared == 6 and trunk.last_read_cached is False
-    assert trunk.prefix_cache_stats()["misses"] == 1
-    other = IDS[:6] + [20, 21]
-    second, shared = trunk.read([other, IDS], anchor=6)
-    assert shared == 6 and trunk.last_read_cached is True
-    assert trunk.prefix_cache_stats()["hits"] == 1
-    assert torch.allclose(second[0], trunk._hidden(other, None), atol=1e-4, rtol=1e-4)
-    assert torch.allclose(second[1], first[0], atol=1e-4, rtol=1e-4)
-    # Eviction keeps the newest entries.
-    trunk.read([[1, 2, 3, 4, 5]], anchor=3)
-    trunk.read([[9, 9, 9, 9]], anchor=2)
-    assert trunk.prefix_cache_stats()["entries"] == 2
+def _full(trunk: HFBackend, seq: list[int]) -> torch.Tensor:
+    return trunk.prefill(seq)[0][FULL]
+
+
+def _close(a: torch.Tensor, b: torch.Tensor) -> bool:
+    return torch.allclose(a, b, atol=1e-4, rtol=1e-4)
+
+
+def test_forked_cache_matches_a_full_forward_on_hybrid_deltanet():
+    trunk = _trunk()
+    full = _full(trunk, IDS)
+    _, past = trunk.prefill(IDS[:6])
+    branched = trunk.prefill(IDS[6:], trunk.fork(past))[0][FULL]
+    assert _close(full, branched)
+    # Rows of different lengths off one cache, one batched forward.
+    others = [[1, 2, 3], [12, 13, 14, 15, 16, 17, 18], IDS[6:]]
+    rows = trunk.prefill_rows(past, others)
+    for taps, suffix in zip(rows, others):
+        assert _close(taps[FULL], _full(trunk, IDS[:6] + suffix))
+    # The original cache is untouched by the branches, so another fork is clean.
+    again = trunk.prefill(IDS[6:], trunk.fork(past))[0][FULL]
+    assert _close(full, again)
+
+
+def _branches(sequences: list[list[int]], depths: list[int | None] | None = None) -> list[Branch]:
+    depths = depths or [None] * len(sequences)
+    return [Branch(id=f"b{i}", field="f", block="", tokens=seq, depth=d) for i, (seq, d) in enumerate(zip(sequences, depths))]
+
+
+# A state prefix, then a question stem shared by four flag branches, then the
+# labels; plus two other questions, one of which is a prefix of a longer branch.
+STATE = [7, 11, 3, 9, 4, 8, 2, 6]
+STEM = [20, 21, 22, 23, 24, 25]
+TAIL = [30, 31, 32]
+TRIE_SEQUENCES = [
+    STATE + STEM + [40] + TAIL,
+    STATE + STEM + [41, 42] + TAIL,
+    STATE + STEM + [43] + TAIL,
+    STATE + STEM + [44, 45, 46] + TAIL,
+    STATE + [50, 51, 52] + TAIL,
+    STATE + [50, 51],
+    STATE + [60] + TAIL,
+]
+
+
+def test_trie_reads_match_full_forwards_when_every_shared_segment_is_split():
+    trunk = _trunk()
+    reader = TrieReader(trunk, overhead_tokens=0)
+    hiddens, record = reader.read(_branches(TRIE_SEQUENCES))
+    for i, seq in enumerate(TRIE_SEQUENCES):
+        assert _close(hiddens[f"b{i}"], _full(trunk, seq)), f"branch {i} differs"
+    # State once, stem once, the [50, 51] node once, then the leaves.
+    assert record["segments"][0]["tokens"] == len(STATE)
+    assert any(seg["tokens"] == len(STEM) and seg["rows"] == 4 for seg in record["segments"])
+    naive = sum(len(s) for s in TRIE_SEQUENCES)
+    assert record["naive_tokens"] == naive
+    trie_tokens = len(STATE) + len(STEM) + (1 + 2 + 1 + 3) + 4 * len(TAIL) + 2 + 1 + len(TAIL) + 1 + len(TAIL)
+    assert record["processed_tokens"] == trie_tokens < naive
+
+
+def test_trie_reads_match_full_forwards_with_the_default_cost_model():
+    trunk = _trunk()
+    reader = TrieReader(trunk)
+    hiddens, record = reader.read(_branches(TRIE_SEQUENCES))
+    for i, seq in enumerate(TRIE_SEQUENCES):
+        assert _close(hiddens[f"b{i}"], _full(trunk, seq))
+    # Short segments are not worth a forward of their own, so they ride in the batch.
+    assert record["forwards"] <= 2
+
+
+def test_trie_groups_sequences_by_their_divergence_points():
+    root = build_trie(TRIE_SEQUENCES, [FULL] * len(TRIE_SEQUENCES))
+    assert root.tokens == STATE
+    assert root.rows == 7
+    stem = next(c for c in root.children if c.tokens[:1] == [20])
+    assert stem.tokens == STEM and stem.rows == 4
+    fifty = next(c for c in root.children if c.tokens[:1] == [50])
+    assert fifty.tokens == [50, 51] and fifty.ends == [5]
+
+
+def test_kept_branches_let_a_later_stage_fork_their_exact_cache():
+    trunk = _trunk()
+    reader = TrieReader(trunk, overhead_tokens=0)
+    parent = STATE + STEM + TAIL
+    first = _branches([parent, STATE + [60] + TAIL])
+    first[0].keep = True
+    kept: dict = {}
+    reader.read(first, None, kept)
+    assert tuple(parent) in kept
+    child = parent + [70, 71, 72, 73]
+    hiddens, record = reader.read(_branches([child, STATE + [61]]), None, kept)
+    assert _close(hiddens["b0"], _full(trunk, child))
+    assert _close(hiddens["b1"], _full(trunk, STATE + [61]))
+    assert record["cached_tokens"] == len(parent)
+
+
+def test_prefix_store_reuses_the_state_prefill_across_requests():
+    trunk = _trunk()
+    reader = TrieReader(trunk, prefix_cache=2)
+    anchor = STATE + [99]
+    first, record = reader.read(_branches([STATE + [1, 2], STATE + [3, 4, 5]]), anchor)
+    assert reader.store.stats()["misses"] == 1 and record["cached_tokens"] == 0
+    second, record = reader.read(_branches([STATE + [6], STATE + [1, 2]]), anchor)
+    assert reader.store.stats()["hits"] == 1 and record["cached_tokens"] == len(STATE)
+    assert _close(second["b0"], _full(trunk, STATE + [6]))
+    assert _close(second["b1"], first["b0"])
+    # A deeper request than the cached one cannot reuse a shallow prefill.
+    shallow, _ = reader.read(_branches([[5, 5, 5, 1], [5, 5, 5, 2]], [2, 2]), [5, 5, 5, 0])
+    reader.read(_branches([[5, 5, 5, 1], [5, 5, 5, 2]]), [5, 5, 5, 0])
+    assert reader.store.stats()["misses"] == 3
+    assert reader.store.stats()["entries"] == 2
 
 
 def test_dense_read_matches_full_forwards_row_by_row():
-    trunk = Trunk(_tiny_qwen35(), _Stub(), model_id="tiny-qwen3.5")
+    trunk = _trunk()
     rows = [IDS, IDS[:4], [3, 1, 4, 1, 5, 9, 2, 6], [7]]
     dense = trunk.read_dense(rows, chunk_rows=3)
     assert len(dense) == 4
     for hidden, seq in zip(dense, rows):
-        assert torch.allclose(hidden, trunk._hidden(seq, None), atol=1e-4, rtol=1e-4)
+        assert _close(hidden, _full(trunk, seq))
 
 
 def test_unknown_layout_is_refused():
@@ -89,7 +166,7 @@ def test_unknown_layout_is_refused():
             self.config = type("C", (), {"hidden_size": 4, "vocab_size": 8})()
 
     try:
-        Trunk(Bare(), _Stub(), model_id="bare")
+        HFBackend(Bare(), _Stub(), model_id="bare")
     except ValueError as exc:
         assert "model.model" in str(exc)
     else:
@@ -102,3 +179,40 @@ class _Stub:
 
     def encode(self, text, add_special_tokens=False):
         return [1]
+
+
+def _reference_layers(trunk: HFBackend, seq: list[int]) -> tuple:
+    # An independent reference: the backend itself never uses output_hidden_states.
+    with torch.inference_mode():
+        out = trunk.model.model(input_ids=torch.tensor([seq]), output_hidden_states=True, return_dict=True)
+    return out.hidden_states
+
+
+def test_truncated_runs_match_output_hidden_states():
+    trunk = _trunk()
+    reference = _reference_layers(trunk, IDS)
+    for k in range(1, FULL):
+        taps, _ = trunk.prefill(IDS, None, (k,))
+        assert _close(taps[k], reference[k][0, -1].float()), f"layer {k} differs"
+    # Several depths from one forward, and a truncated prefill that a fork extends.
+    taps, past = trunk.prefill(IDS[:6], None, (1, 3))
+    extended, _ = trunk.prefill(IDS[6:], trunk.fork(past), (2, 3))
+    assert _close(extended[2], reference[2][0, -1].float())
+    assert _close(extended[3], reference[3][0, -1].float())
+
+
+def test_trie_reads_at_mixed_depths_match_the_reference_layer():
+    trunk = _trunk()
+    depths = [2, 2, 1, 2, FULL, 1, 3]
+    for overhead in (0, 64):
+        reader = TrieReader(trunk, overhead_tokens=overhead)
+        hiddens, record = reader.read(_branches(TRIE_SEQUENCES, depths))
+        for i, (seq, depth) in enumerate(zip(TRIE_SEQUENCES, depths)):
+            expected = _reference_layers(trunk, seq)[depth][0, -1].float()
+            if depth == FULL:
+                expected = _full(trunk, seq)
+            assert _close(hiddens[f"b{i}"], expected), f"branch {i} at depth {depth} differs"
+        # The stem is shared by four branches that need at most two layers.
+        stem = [seg for seg in record["segments"] if seg["tokens"] == len(STEM)]
+        if overhead == 0:
+            assert stem and stem[0]["depth"] == 2
