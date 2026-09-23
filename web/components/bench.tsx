@@ -16,7 +16,7 @@ import {
   type Shape,
 } from "@/lib/types";
 
-const API = "/readhead-api";
+const API = "/dynajev-api";
 
 const SHAPES: { id: Shape; label: string }[] = [
   { id: "boolean", label: "Yes / no" },
@@ -122,7 +122,7 @@ export function Bench() {
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
       <header className="flex flex-col gap-6 border-b border-rule pb-8 sm:flex-row sm:items-end sm:justify-between">
         <div className="max-w-2xl">
-          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-ink-soft">Readhead</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-ink-soft">Dynajev</p>
           <h1 className="mt-3 font-serif text-4xl leading-[1.05] text-foreground sm:text-5xl">
             The head is compiled from the question.
           </h1>

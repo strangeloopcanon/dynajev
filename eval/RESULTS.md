@@ -1,6 +1,6 @@
 # Read vs write on `Qwen/Qwen3.5-2B`
 
-Same frozen model, same state, same question. Read = Readhead compiled head at the answer boundary. Write = ordinary greedy chat completion, parsed. CPU, bfloat16, 4 cores, reference DeltaNet kernels.
+Same frozen model, same state, same question. Read = Dynajev compiled head at the answer boundary. Write = ordinary greedy chat completion, parsed. CPU, bfloat16, 4 cores, reference DeltaNet kernels.
 
 ## Single questions
 

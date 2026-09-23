@@ -1,9 +1,9 @@
 import re
 
-from readhead.compile import DecideIn
-from readhead.engine import Readhead
-from readhead.errors import CompileError
-from readhead.trunk import common_prefix_len
+from dynajev.compile import DecideIn
+from dynajev.engine import Dynajev
+from dynajev.errors import CompileError
+from dynajev.trunk import common_prefix_len
 import pytest
 
 
@@ -71,7 +71,7 @@ class FakeTrunk:
 
 def test_schema_compiles_heterogeneous_heads_on_one_prefix():
     trunk = FakeTrunk()
-    result = Readhead(trunk).decide(
+    result = Dynajev(trunk).decide(
         DecideIn.model_validate(
             {
                 "context": "We sent the refund on Tuesday. The mug arrived broken.",
@@ -117,7 +117,7 @@ def test_schema_compiles_heterogeneous_heads_on_one_prefix():
 
 
 def test_margin_strategy_couples_options():
-    result = Readhead(FakeTrunk()).decide(
+    result = Dynajev(FakeTrunk()).decide(
         DecideIn(
             context="The mug arrived broken.",
             question="What is needed?",
@@ -133,7 +133,7 @@ def test_margin_strategy_couples_options():
 
 def test_open_question_falls_through_to_chat():
     trunk = FakeTrunk()
-    result = Readhead(trunk).decide(DecideIn(context="Anything.", question="What should we do next?"))
+    result = Dynajev(trunk).decide(DecideIn(context="Anything.", question="What should we do next?"))
     field = result["fields"][0]
     assert field["head"] == "chat_decode"
     assert field["answer"] == "Send a replacement mug and confirm the refund."
@@ -144,11 +144,11 @@ def test_open_question_falls_through_to_chat():
 
 def test_missing_question_still_raises():
     with pytest.raises(CompileError):
-        Readhead(FakeTrunk()).decide(DecideIn(context="Anything."))
+        Dynajev(FakeTrunk()).decide(DecideIn(context="Anything."))
 
 
 def test_fit_payload_is_attached_for_labeled_states():
-    result = Readhead(FakeTrunk()).decide(
+    result = Dynajev(FakeTrunk()).decide(
         DecideIn(
             context="The customer says thank you for the refund.",
             question="Is the customer grateful?",
@@ -167,7 +167,7 @@ def test_fit_payload_is_attached_for_labeled_states():
 
 def test_batch_answers_match_single_answers():
     trunk = FakeTrunk()
-    engine = Readhead(trunk)
+    engine = Dynajev(trunk)
     questions = {
         "ok": {"type": "noul", "instructions": "Is it fine?"},
         "color": {"type": "choice", "instructions": "Which color?", "options": ["red", "blue", "green"]},
@@ -185,4 +185,4 @@ def test_batch_answers_match_single_answers():
 
 def test_batch_refuses_open_questions():
     with pytest.raises(CompileError, match="closed readouts only"):
-        Readhead(FakeTrunk()).decide_batch(["x"], {"q": {"type": "open", "instructions": "Why?"}})
+        Dynajev(FakeTrunk()).decide_batch(["x"], {"q": {"type": "open", "instructions": "Why?"}})

@@ -1,7 +1,7 @@
 import re
 
-from readhead.bind import bind_field
-from readhead.compile import FieldJob
+from dynajev.bind import bind_field
+from dynajev.compile import FieldJob
 
 
 class WordEncoder:

@@ -7,16 +7,16 @@ from typing import Any
 
 import numpy as np
 
-from readhead.bind import BoundField, Node, bind_field
-from readhead.compile import DecideIn, FieldJob, compile_request
-from readhead.errors import CompileError
-from readhead.fit import apply_affine, apply_ridge, probabilities_from_logits, select_fit
-from readhead.prompts import user_content
-from readhead.score import binary_from_logits, ordinal_expectation, softmax
-from readhead.trunk import common_prefix_len
+from dynajev.bind import BoundField, Node, bind_field
+from dynajev.compile import DecideIn, FieldJob, compile_request
+from dynajev.errors import CompileError
+from dynajev.fit import apply_affine, apply_ridge, probabilities_from_logits, select_fit
+from dynajev.prompts import user_content
+from dynajev.score import binary_from_logits, ordinal_expectation, softmax
+from dynajev.trunk import common_prefix_len
 
 
-class Readhead:
+class Dynajev:
     def __init__(self, trunk: Any):
         self.trunk = trunk
 

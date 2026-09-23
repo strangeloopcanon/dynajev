@@ -6,14 +6,14 @@ import argparse
 import json
 import os
 
-from readhead.compile import DecideIn
-from readhead.engine import Readhead
-from readhead.trunk import Trunk
+from dynajev.compile import DecideIn
+from dynajev.engine import Dynajev
+from dynajev.trunk import Trunk
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Compile a readout head and run it on a frozen causal model.")
-    parser.add_argument("--model", default=os.environ.get("READHEAD_MODEL", "Qwen/Qwen3.5-2B"))
+    parser.add_argument("--model", default=os.environ.get("DYNAJEV_MODEL", "Qwen/Qwen3.5-2B"))
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     serve = sub.add_parser("serve", help="Start the HTTP API")
@@ -31,10 +31,10 @@ def main() -> None:
 
     args = parser.parse_args()
     if args.cmd == "serve":
-        os.environ["READHEAD_MODEL"] = args.model
-        os.environ["READHEAD_HOST"] = args.host
-        os.environ["READHEAD_PORT"] = str(args.port)
-        from readhead.server import main as serve_main
+        os.environ["DYNAJEV_MODEL"] = args.model
+        os.environ["DYNAJEV_HOST"] = args.host
+        os.environ["DYNAJEV_PORT"] = str(args.port)
+        from dynajev.server import main as serve_main
 
         serve_main()
         return
@@ -44,7 +44,7 @@ def main() -> None:
         with open(args.schema, encoding="utf-8") as handle:
             schema = json.load(handle)
     trunk = Trunk.load(args.model)
-    result = Readhead(trunk).decide(
+    result = Dynajev(trunk).decide(
         DecideIn.model_validate(
             {
                 "context": args.context,

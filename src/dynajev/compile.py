@@ -12,7 +12,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from readhead.errors import CompileError
+from dynajev.errors import CompileError
 
 Kind = Literal["boolean", "categorical", "ordinal", "multilabel", "extract", "generate", "open"]
 Strategy = Literal["auto", "slice", "letter", "margin", "prototype"]

@@ -2,16 +2,16 @@
 
 import json
 
-from readhead.compile import DecideIn
-from readhead.engine import Readhead
-from readhead.trunk import Trunk
+from dynajev.compile import DecideIn
+from dynajev.engine import Dynajev
+from dynajev.trunk import Trunk
 
 MODEL = "Qwen/Qwen3.5-2B"
 
 
 def main() -> None:
     trunk = Trunk.load(MODEL)
-    engine = Readhead(trunk)
+    engine = Dynajev(trunk)
     requests = [
         DecideIn(
             context="We sent the refund on Tuesday. It posted to the card ending 4412.",

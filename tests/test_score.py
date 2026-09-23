@@ -1,7 +1,7 @@
 import math
 
-from readhead.score import binary_from_logits, group_logit, logsumexp, ordinal_expectation, softmax
-from readhead.trunk import trim_repetition
+from dynajev.score import binary_from_logits, group_logit, logsumexp, ordinal_expectation, softmax
+from dynajev.trunk import trim_repetition
 
 
 def test_logsumexp_matches_two_equal_values():

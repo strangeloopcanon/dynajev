@@ -5,9 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Protocol
 
-from readhead.compile import FieldJob
-from readhead.errors import CompileError
-from readhead.prompts import (
+from dynajev.compile import FieldJob
+from dynajev.errors import CompileError
+from dynajev.prompts import (
     ASSISTANT_PREFIX,
     OPEN_SYSTEM,
     SYSTEM,

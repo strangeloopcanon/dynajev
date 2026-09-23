@@ -1,10 +1,10 @@
-# Readhead
+# Dynajev
 
 Ask a frozen language model closed questions and read the answers off its logits instead of making it write them.
 
-The name is from disk drives: a read head reads the platter without writing to it.
+The name is short for dynamic [Jev](https://jevtypesafeai.com/docs): the same closed-answer idea, with the readout chosen per question instead of fixed. It is an independent project and not affiliated with TypeSafe.
 
-You send a piece of text (a ticket, a transcript, a document) and a set of typed questions about it: yes/no, pick one, pick a level, pick any that apply, quote a span. Readhead builds the right prompt and readout for each type, runs the model once, and returns each answer with a probability. Nothing is generated unless a question is genuinely open-ended. The model's weights never change.
+You send a piece of text (a ticket, a transcript, a document) and a set of typed questions about it: yes/no, pick one, pick a level, pick any that apply, quote a span. Dynajev builds the right prompt and readout for each type, runs the model once, and returns each answer with a probability. Nothing is generated unless a question is genuinely open-ended. The model's weights never change.
 
 ```bash
 curl -s http://127.0.0.1:43124/api/decide -H 'content-type: application/json' -d '{
@@ -41,7 +41,7 @@ Four of those six answers cost zero generated tokens. The quote decodes a few to
 
 A language model's output layer is already a classifier over its vocabulary. When the answer to a question is one of a few known strings, you do not need the model to type it out and you do not need to parse what it typed. You put the model at the point where it is about to answer and read the probability it assigns to each allowed answer. That is one forward pass and a handful of dot products.
 
-Several projects have used this idea, each with one fixed readout: [Glance](https://glance.yohei.me/) for yes/no and ratings about images, [Simple Jev](https://simple-jev.featherless.ai/how-it-works) and [OpenJev](https://huggingface.co/openjev/openjev) for lettered choices, [Laya](https://huggingface.co/convaiinnovations/laya) and [YOFO](https://arxiv.org/abs/2511.16600) with trained heads, and the hosted [Jev](https://jevtypesafeai.com/docs) API with a model trained for it. Readhead's contribution is small and specific: the question type chooses the readout, at request time, on a stock model. A yes/no question reads the Yes and No rows. A choice among single-word options reads those words directly; a choice among phrases letters them and reads the letter rows. A rating reads digit rows and returns the expected level. Flags get one independent yes/no each. Several questions about the same text share one prefill and branch at the answer. All of it works on a model you downloaded five minutes ago.
+Several projects have used this idea, each with one fixed readout: [Glance](https://glance.yohei.me/) for yes/no and ratings about images, [Simple Jev](https://simple-jev.featherless.ai/how-it-works) and [OpenJev](https://huggingface.co/openjev/openjev) for lettered choices, [Laya](https://huggingface.co/convaiinnovations/laya) and [YOFO](https://arxiv.org/abs/2511.16600) with trained heads, and the hosted [Jev](https://jevtypesafeai.com/docs) API with a model trained for it. Dynajev's contribution is small and specific: the question type chooses the readout, at request time, on a stock model. A yes/no question reads the Yes and No rows. A choice among single-word options reads those words directly; a choice among phrases letters them and reads the letter rows. A rating reads digit rows and returns the expected level. Flags get one independent yes/no each. Several questions about the same text share one prefill and branch at the answer. All of it works on a model you downloaded five minutes ago.
 
 What you get compared with asking the model to write JSON:
 
@@ -97,7 +97,7 @@ Everything below is on `Qwen/Qwen3.5-2B`, bfloat16, four CPU cores, reference ke
 
 ### Read versus write
 
-`eval/items.json` is 74 hand-labeled single questions (yes/no, one-token choice, phrase choice, rating, flags, quote), 6 schemas with 22 fields, and a 16-note tone set. `scripts/eval.py` runs every item as a read (Readhead) and as a write (the same model generating the answer greedily, then parsed). Full tables in [`eval/RESULTS.md`](eval/RESULTS.md).
+`eval/items.json` is 74 hand-labeled single questions (yes/no, one-token choice, phrase choice, rating, flags, quote), 6 schemas with 22 fields, and a 16-note tone set. `scripts/eval.py` runs every item as a read (Dynajev) and as a write (the same model generating the answer greedily, then parsed). Full tables in [`eval/RESULTS.md`](eval/RESULTS.md).
 
 | | Read | Write |
 | --- | --- | --- |
@@ -131,28 +131,28 @@ The line that holds on any hardware is the last one: reading is about 5× the th
 Python 3.11+, Node 22 for the bench.
 
 ```bash
-git clone https://github.com/strangeloopcanon/readhead && cd readhead
+git clone https://github.com/strangeloopcanon/dynajev && cd dynajev
 python3 -m venv .venv && source .venv/bin/activate
 pip install torch --index-url https://download.pytorch.org/whl/cpu    # or the CUDA wheel
 pip install -e ".[dev]"
 
-readhead serve --port 43124          # downloads Qwen/Qwen3.5-2B on first start (4.5 GB)
+dynajev serve --port 43124          # downloads Qwen/Qwen3.5-2B on first start (4.5 GB)
 ```
 
 ```bash
-readhead ask --context "The bicycle is red." --question "What color is the bicycle?" --options red blue green
+dynajev ask --context "The bicycle is red." --question "What color is the bicycle?" --options red blue green
 ```
 
 Docker (CPU, weights baked into the image):
 
 ```bash
-docker build -t readhead . && docker run -p 43124:43124 readhead
+docker build -t dynajev . && docker run -p 43124:43124 dynajev
 ```
 
 The web bench in `web/` shows the compiled heads, probabilities, and prompts for each request:
 
 ```bash
-cd web && npm install && npm run dev      # http://127.0.0.1:43123, proxies /readhead-api to the server
+cd web && npm install && npm run dev      # http://127.0.0.1:43123, proxies /dynajev-api to the server
 ```
 
 Tests do not download weights; they build tiny random models:
@@ -163,13 +163,13 @@ pytest
 
 ### Server
 
-`readhead serve` runs one model on one device, one forward at a time. `/api/ready` returns 503 until the weights are loaded; `/api/health` reports model, dtype, uptime, and cache statistics. Requests queue behind a bounded semaphore and get a 429 when it is full. Prefilled states are kept in a small LRU, so a second question about the same document only pays for its own suffix (a follow-up on a cached ticket answered in 165 ms here; a cold single question takes about 250 ms).
+`dynajev serve` runs one model on one device, one forward at a time. `/api/ready` returns 503 until the weights are loaded; `/api/health` reports model, dtype, uptime, and cache statistics. Requests queue behind a bounded semaphore and get a 429 when it is full. Prefilled states are kept in a small LRU, so a second question about the same document only pays for its own suffix (a follow-up on a cached ticket answered in 165 ms here; a cold single question takes about 250 ms).
 
-Environment variables: `READHEAD_MODEL`, `READHEAD_DTYPE` (`bfloat16` on CPU and `float16` on CUDA by default), `READHEAD_HOST`, `READHEAD_PORT`, `READHEAD_MAX_QUEUE`, `READHEAD_PREFIX_CACHE`, `READHEAD_CORS`.
+Environment variables: `DYNAJEV_MODEL`, `DYNAJEV_DTYPE` (`bfloat16` on CPU and `float16` on CUDA by default), `DYNAJEV_HOST`, `DYNAJEV_PORT`, `DYNAJEV_MAX_QUEUE`, `DYNAJEV_PREFIX_CACHE`, `DYNAJEV_CORS`.
 
 ## Models
 
-The tested trunk is Qwen3.5-2B, loaded as its text-only decoder (the vision tower is not loaded). It is a hybrid: three Gated DeltaNet layers for every full-attention layer. Branching off a shared prefill has to carry recurrent and convolution states as well as key/value caches; the code deep-copies the whole cache, and a unit test checks that a batched branch equals a full forward on that layout. Larger Qwen3.5 checkpoints are the same layout and should work by setting `READHEAD_MODEL`.
+The tested trunk is Qwen3.5-2B, loaded as its text-only decoder (the vision tower is not loaded). It is a hybrid: three Gated DeltaNet layers for every full-attention layer. Branching off a shared prefill has to carry recurrent and convolution states as well as key/value caches; the code deep-copies the whole cache, and a unit test checks that a batched branch equals a full forward on that layout. Larger Qwen3.5 checkpoints are the same layout and should work by setting `DYNAJEV_MODEL`.
 
 The readout itself has nothing Qwen-specific in it. Any causal model with a chat template, a decoder at `model.model.layers`, and an `lm_head` will load; anything else is refused with a message pointing at the adapter spot. The heads need Yes, No, the digits, and the letters to be single tokens, which holds for every mainstream tokenizer. What has not been verified on other families is the cache branch. If you try one, run `tests/test_cache.py` against a tiny config of that architecture first.
 
@@ -185,7 +185,7 @@ The readout itself has nothing Qwen-specific in it. Any causal model with a chat
 ## Layout
 
 ```
-src/readhead/
+src/dynajev/
   compile.py   typed questions and schemas -> field jobs
   bind.py      field jobs + tokenizer -> heads and token rows
   prompts.py   system text, state block, answer boundary

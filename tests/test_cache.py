@@ -1,7 +1,7 @@
 import torch
 from transformers import Qwen3_5ForCausalLM, Qwen3_5TextConfig
 
-from readhead.trunk import Trunk
+from dynajev.trunk import Trunk
 
 IDS = [7, 11, 3, 9, 4, 8, 2, 6, 5, 10]
 

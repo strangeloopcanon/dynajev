@@ -1,6 +1,6 @@
 import numpy as np
 
-from readhead.fit import apply_affine, apply_ridge, select_fit
+from dynajev.fit import apply_affine, apply_ridge, select_fit
 
 
 def test_ridge_replaces_a_head_with_no_logit_signal():

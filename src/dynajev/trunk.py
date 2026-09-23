@@ -32,7 +32,7 @@ def trim_repetition(text: str) -> str:
 
 
 def _pick_dtype(device: str) -> torch.dtype:
-    """READHEAD_DTYPE overrides. Default: float16 on CUDA, bfloat16 on CPU.
+    """DYNAJEV_DTYPE overrides. Default: float16 on CUDA, bfloat16 on CPU.
 
     bfloat16 halves the memory of a 2B trunk on CPU (about 4.5 GB instead of 9)
     and every readout is computed in float32 from the last hidden state anyway.
@@ -41,7 +41,7 @@ def _pick_dtype(device: str) -> torch.dtype:
     import os
 
     named = {"float32": torch.float32, "bfloat16": torch.bfloat16, "float16": torch.float16}
-    wanted = os.environ.get("READHEAD_DTYPE", "").lower()
+    wanted = os.environ.get("DYNAJEV_DTYPE", "").lower()
     if wanted in named:
         return named[wanted]
     return torch.float16 if device == "cuda" else torch.bfloat16
@@ -70,7 +70,7 @@ class Trunk:
         if not hasattr(model, "model") or not hasattr(model, "lm_head") or not hasattr(model.model, "layers"):
             raise ValueError(
                 f"{model_id}: expected a decoder at model.model with .layers and an lm_head. "
-                "Readhead is tested on the Qwen3.5 layout; other layouts need a small adapter here."
+                "Dynajev is tested on the Qwen3.5 layout; other layouts need a small adapter here."
             )
         self.model.eval()
         self.model.to(device)
@@ -117,7 +117,7 @@ class Trunk:
         return context
 
     def encode_prompt(self, user_content: str, assistant_prefix: str, system: str | None = None) -> list[int]:
-        from readhead.prompts import SYSTEM
+        from dynajev.prompts import SYSTEM
 
         messages = [
             {"role": "system", "content": SYSTEM if system is None else system},

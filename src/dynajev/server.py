@@ -6,12 +6,12 @@ latency without limit. `/api/ready` is the readiness probe (503 until the
 weights are on the device); `/api/health` is liveness plus model metadata.
 
 Environment:
-    READHEAD_MODEL      Hugging Face id (default Qwen/Qwen3.5-2B)
-    READHEAD_DTYPE      float32 | bfloat16 | float16 (default: bf16 on CPU, fp16 on CUDA)
-    READHEAD_HOST/PORT  bind address (default 0.0.0.0:43124)
-    READHEAD_MAX_QUEUE  requests allowed to wait for the model (default 32)
-    READHEAD_PREFIX_CACHE  prefilled states kept for reuse (default 16)
-    READHEAD_CORS       comma-separated allowed origins (default *)
+    DYNAJEV_MODEL      Hugging Face id (default Qwen/Qwen3.5-2B)
+    DYNAJEV_DTYPE      float32 | bfloat16 | float16 (default: bf16 on CPU, fp16 on CUDA)
+    DYNAJEV_HOST/PORT  bind address (default 0.0.0.0:43124)
+    DYNAJEV_MAX_QUEUE  requests allowed to wait for the model (default 32)
+    DYNAJEV_PREFIX_CACHE  prefilled states kept for reuse (default 16)
+    DYNAJEV_CORS       comma-separated allowed origins (default *)
 """
 
 from __future__ import annotations
@@ -26,27 +26,27 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from readhead.compile import DecideIn, QuestionIn
-from readhead.engine import Readhead
-from readhead.errors import CompileError
+from dynajev.compile import DecideIn, QuestionIn
+from dynajev.engine import Dynajev
+from dynajev.errors import CompileError
 
-MODEL_ID = os.environ.get("READHEAD_MODEL", "Qwen/Qwen3.5-2B")
-MAX_QUEUE = int(os.environ.get("READHEAD_MAX_QUEUE", "32"))
-PREFIX_CACHE = int(os.environ.get("READHEAD_PREFIX_CACHE", "16"))
+MODEL_ID = os.environ.get("DYNAJEV_MODEL", "Qwen/Qwen3.5-2B")
+MAX_QUEUE = int(os.environ.get("DYNAJEV_MAX_QUEUE", "32"))
+PREFIX_CACHE = int(os.environ.get("DYNAJEV_PREFIX_CACHE", "16"))
 VERSION = "0.2.0"
 
 _model_lock = threading.Lock()
 _queue = threading.BoundedSemaphore(MAX_QUEUE)
-_state: dict[str, Any] = {"readhead": None, "error": None, "loading": True, "started": time.time(), "served": 0}
+_state: dict[str, Any] = {"dynajev": None, "error": None, "loading": True, "started": time.time(), "served": 0}
 
 
 def _load() -> None:
     try:
-        from readhead.trunk import Trunk
+        from dynajev.trunk import Trunk
 
         trunk = Trunk.load(MODEL_ID)
         trunk.prefix_cache_size = PREFIX_CACHE
-        _state["readhead"] = Readhead(trunk)
+        _state["dynajev"] = Dynajev(trunk)
         _state["error"] = None
     except Exception as exc:  # surface the real loader failure to the client
         _state["error"] = str(exc)
@@ -60,10 +60,10 @@ async def _lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title="Readhead", version=VERSION, lifespan=_lifespan)
+app = FastAPI(title="Dynajev", version=VERSION, lifespan=_lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[o.strip() for o in os.environ.get("READHEAD_CORS", "*").split(",")],
+    allow_origins=[o.strip() for o in os.environ.get("DYNAJEV_CORS", "*").split(",")],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -71,10 +71,10 @@ app.add_middleware(
 
 @app.get("/api/health")
 def health() -> dict[str, Any]:
-    readhead: Readhead | None = _state["readhead"]
-    trunk = getattr(readhead, "trunk", None)
+    dynajev: Dynajev | None = _state["dynajev"]
+    trunk = getattr(dynajev, "trunk", None)
     return {
-        "loaded": readhead is not None,
+        "loaded": dynajev is not None,
         "loading": bool(_state["loading"]),
         "error": _state["error"],
         "model": MODEL_ID,
@@ -91,22 +91,22 @@ def health() -> dict[str, Any]:
 
 @app.get("/api/ready")
 def ready() -> dict[str, Any]:
-    if _state["readhead"] is None:
+    if _state["dynajev"] is None:
         raise HTTPException(status_code=503, detail=_state["error"] or "loading")
     return {"ready": True, "model": MODEL_ID}
 
 
 @app.post("/api/decide")
 def decide(req: DecideIn) -> dict[str, Any]:
-    readhead: Readhead | None = _state["readhead"]
-    if readhead is None:
+    dynajev: Dynajev | None = _state["dynajev"]
+    if dynajev is None:
         detail = _state["error"] or "The model is still loading."
         raise HTTPException(status_code=503, detail=detail)
     if not _queue.acquire(blocking=False):
         raise HTTPException(status_code=429, detail=f"Queue full ({MAX_QUEUE} waiting). Retry shortly.")
     try:
         with _model_lock:
-            result = readhead.decide(req)
+            result = dynajev.decide(req)
         _state["served"] += 1
         return result
     except CompileError as exc:
@@ -125,14 +125,14 @@ class BatchIn(BaseModel):
 
 @app.post("/api/decide_batch")
 def decide_batch(req: BatchIn) -> dict[str, Any]:
-    readhead: Readhead | None = _state["readhead"]
-    if readhead is None:
+    dynajev: Dynajev | None = _state["dynajev"]
+    if dynajev is None:
         raise HTTPException(status_code=503, detail=_state["error"] or "The model is still loading.")
     if not _queue.acquire(blocking=False):
         raise HTTPException(status_code=429, detail=f"Queue full ({MAX_QUEUE} waiting). Retry shortly.")
     try:
         with _model_lock:
-            result = readhead.decide_batch(
+            result = dynajev.decide_batch(
                 req.contexts, {k: v.model_dump() for k, v in req.questions.items()}, req.chunk_rows, req.trace, req.mode
             )
         _state["served"] += len(req.contexts)
@@ -146,6 +146,6 @@ def decide_batch(req: BatchIn) -> dict[str, Any]:
 def main() -> None:
     import uvicorn
 
-    host = os.environ.get("READHEAD_HOST", "0.0.0.0")
-    port = int(os.environ.get("READHEAD_PORT", "43124"))
-    uvicorn.run("readhead.server:app", host=host, port=port, reload=False)
+    host = os.environ.get("DYNAJEV_HOST", "0.0.0.0")
+    port = int(os.environ.get("DYNAJEV_PORT", "43124"))
+    uvicorn.run("dynajev.server:app", host=host, port=port, reload=False)

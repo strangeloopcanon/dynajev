@@ -19,7 +19,7 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Readhead",
+  title: "Dynajev",
   description: "Compile a readout head from the shape of a question and run it on a frozen open model.",
 };
 

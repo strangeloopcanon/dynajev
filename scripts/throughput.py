@@ -18,9 +18,9 @@ import json
 import time
 from pathlib import Path
 
-from readhead.compile import DecideIn
-from readhead.engine import Readhead
-from readhead.trunk import Trunk
+from dynajev.compile import DecideIn
+from dynajev.engine import Dynajev
+from dynajev.trunk import Trunk
 
 QUESTIONS = {
     "refund": {"type": "noul", "instructions": "Does the customer want money back?"},
@@ -50,7 +50,7 @@ def main() -> None:
 
     trunk = Trunk.load(args.model, device="cpu")
     trunk.prefix_cache_size = 0
-    engine = Readhead(trunk)
+    engine = Dynajev(trunk)
 
     # warm up
     engine.decide(DecideIn.model_validate({"context": contexts[0], "questions": QUESTIONS}))
@@ -89,7 +89,7 @@ def main() -> None:
     if args.write:
         import torch
 
-        from readhead.prompts import state_text
+        from dynajev.prompts import state_text
 
         block = (
             "Fill in this JSON object and reply with only the JSON:\n"

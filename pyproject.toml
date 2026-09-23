@@ -1,5 +1,5 @@
 [project]
-name = "readhead"
+name = "dynajev"
 version = "0.2.0"
 description = "Compile a readout head from the shape of a question and run it on a frozen causal model."
 readme = "README.md"
@@ -17,13 +17,13 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com/strangeloopcanon/readhead"
+Repository = "https://github.com/strangeloopcanon/dynajev"
 
 [project.optional-dependencies]
 dev = ["pytest", "httpx"]
 
 [project.scripts]
-readhead = "readhead.cli:main"
+dynajev = "dynajev.cli:main"
 
 [build-system]
 requires = ["setuptools>=68"]

@@ -1,7 +1,7 @@
 import pytest
 
-from readhead.compile import DecideIn, compile_request
-from readhead.errors import CompileError
+from dynajev.compile import DecideIn, compile_request
+from dynajev.errors import CompileError
 
 
 def test_auxiliary_question_routes_to_boolean():

@@ -24,7 +24,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from readhead.score import nll, softmax
+from dynajev.score import nll, softmax
 
 _MIN_T = 0.5
 _MAX_T = 5.0
