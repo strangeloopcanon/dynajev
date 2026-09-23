@@ -2,9 +2,9 @@
 
 Build a Jev-style decision model out of any open-weight language model, per question, at request time.
 
-[Jev](https://jevtypesafeai.com/docs), [Glance](https://glance.yohei.me/), [OpenJev](https://huggingface.co/openjev/openjev), [Laya](https://huggingface.co/convaiinnovations/laya) and [YOFO](https://arxiv.org/abs/2511.16600) each fix one answering architecture in advance, either hard-coded or trained. Dynajev compiles it from the question. Each typed question gets its own output head: which rows of the model's output matrix to read, where in the prompt, how many branches off a shared prefill, and how to combine the scores. The heads are attached to a stock model for one request and discarded. No weights change and nothing is trained.
+Each typed question compiles to its own output head on a stock model: which rows of the output matrix to read, where in the prompt, how many branches off a shared prefill, and how to combine the scores (a sigmoid, a softmax, an expected level, independent flags). The heads exist for one request and are discarded. No weights change and nothing is trained.
 
-The name is short for dynamic Jev. It is an independent project, not affiliated with TypeSafe.
+The name is short for dynamic [Jev](https://jevtypesafeai.com/docs). It is an independent project, not affiliated with TypeSafe.
 
 ## Example
 
@@ -78,6 +78,20 @@ A web bench that shows the compiled heads lives in `web/` (`npm install && npm r
 - Tested on Qwen3.5. Other causal models with a standard layout should load; check `tests/test_cache.py` against yours first.
 - Probabilities are relative to the allowed answers, not calibrated frequencies.
 - The model is not made smarter. The heads report what it already believes.
+
+## Prior work
+
+Dynajev is an extension of existing ideas, not a new method. The closest project is [Simple Jev](https://github.com/featherless-ai/simple-jev), which already serves `noul`, `choice` and `score` from a stock model by reading logits at `{"answer": "`, with one shared prefill and a batched branch per question. [typed-gguf](https://pypi.org/project/typed-gguf/) does similar for GGUF models, and [Glance](https://glance.yohei.me/) does it for vision-language models.
+
+| Project | Model | Readout per question type | Shared prefill across questions |
+| --- | --- | --- | --- |
+| [Simple Jev](https://github.com/featherless-ai/simple-jev) | stock | fixed per type: letters, digits, 1–9 rating for `noul` | within a request |
+| [typed-gguf](https://pypi.org/project/typed-gguf/) | stock GGUF | per type, with calibrated temperature | yes, with saved states |
+| [Glance](https://glance.yohei.me/) | stock vision-language | yes/no, pick-one, digits | per image |
+| [SGLang](https://docs.sglang.io/docs/references/frontend/choices_methods), [guidance](https://github.com/guidance-ai/guidance), [LMQL](https://lmql.ai/) | stock | option scoring, chosen by the programmer | SGLang |
+| [decider](https://github.com/Mapika/decider), [Laya](https://huggingface.co/convaiinnovations/laya), [YOFO](https://arxiv.org/abs/2511.16600), Jev | trained | one learned format | packed slots or one pass |
+
+What Dynajev adds on top: the head is chosen from how the labels tokenize (direct option tokens when each option is one token, letters otherwise); `noul` is a Yes-versus-No margin; `flags`, `quote` and `open` share the same prefill as the closed questions; a request can carry labeled examples and get a bias or ridge-probe correction that is kept only if leave-one-out accuracy holds; prefills are cached across requests; and there is a measured comparison against the same model writing its answers. Reading label-word logits goes back to [PET](https://arxiv.org/abs/2001.07676), and the bias fit is essentially [contextual calibration](https://arxiv.org/abs/2102.09690).
 
 How requests compile, batching modes, server settings, and model support: [`docs/details.md`](docs/details.md).
 
