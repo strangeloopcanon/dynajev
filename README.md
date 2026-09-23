@@ -1,10 +1,10 @@
 # Dynajev
 
-Ask a frozen language model closed questions and read the answers off its logits instead of making it write them.
+Build a Jev-style decision model out of any open-weight language model, per question, at request time.
 
-The name is short for dynamic [Jev](https://jevtypesafeai.com/docs): the same closed-answer idea, with the readout chosen per question instead of fixed. It is an independent project and not affiliated with TypeSafe.
+[Jev](https://jevtypesafeai.com/docs), [Glance](https://glance.yohei.me/), [OpenJev](https://huggingface.co/openjev/openjev), [Laya](https://huggingface.co/convaiinnovations/laya) and [YOFO](https://arxiv.org/abs/2511.16600) each settle on one answering architecture and push every question through it. Dynajev builds the architecture from the question. Each typed question compiles to its own output head: which rows of the model's output matrix it reads, where in the prompt it reads them, how many branches it runs off the shared prefill, and how the scores combine (a sigmoid, a softmax, an expected level, independent flags). The compiled heads are attached to a stock model for that one request, run in a single pass, and discarded. The model's weights never change and nothing is trained.
 
-You send a piece of text (a ticket, a transcript, a document) and a set of typed questions about it: yes/no, pick one, pick a level, pick any that apply, quote a span. Dynajev builds the right prompt and readout for each type, runs the model once, and returns each answer with a probability. Nothing is generated unless a question is genuinely open-ended. The model's weights never change.
+The name is short for dynamic Jev. It is an independent project and not affiliated with TypeSafe.
 
 ```bash
 curl -s http://127.0.0.1:43124/api/decide -H 'content-type: application/json' -d '{
@@ -37,11 +37,21 @@ curl -s http://127.0.0.1:43124/api/decide -H 'content-type: application/json' -d
 
 Four of those six answers cost zero generated tokens. The quote decodes a few tokens and is checked against the text. The open question is an ordinary chat completion, because that is what an open question is.
 
-## Why this exists
+## Why this is different
 
-A language model's output layer is already a classifier over its vocabulary. When the answer to a question is one of a few known strings, you do not need the model to type it out and you do not need to parse what it typed. You put the model at the point where it is about to answer and read the probability it assigns to each allowed answer. That is one forward pass and a handful of dot products.
+Every system in this space makes the same move: stop the model from writing and read a decision out of it directly. They differ in which decision structure they fix in advance.
 
-Several projects have used this idea, each with one fixed readout: [Glance](https://glance.yohei.me/) for yes/no and ratings about images, [Simple Jev](https://simple-jev.featherless.ai/how-it-works) and [OpenJev](https://huggingface.co/openjev/openjev) for lettered choices, [Laya](https://huggingface.co/convaiinnovations/laya) and [YOFO](https://arxiv.org/abs/2511.16600) with trained heads, and the hosted [Jev](https://jevtypesafeai.com/docs) API with a model trained for it. Dynajev's contribution is small and specific: the question type chooses the readout, at request time, on a stock model. A yes/no question reads the Yes and No rows. A choice among single-word options reads those words directly; a choice among phrases letters them and reads the letter rows. A rating reads digit rows and returns the expected level. Flags get one independent yes/no each. Several questions about the same text share one prefill and branch at the answer. All of it works on a model you downloaded five minutes ago.
+| System | Structure it fixes | How it gets there |
+| --- | --- | --- |
+| Glance | Yes/No margin; one margin per option; digit expectation | Frozen vision-language model, fixed per question kind |
+| Simple Jev, OpenJev shim | A letter or digit row at an unfinished `{"answer": "` | Frozen or lightly tuned causal model |
+| OpenJev (Wortega), Laya | A trained head per task | Training |
+| YOFO | Packed yes/no answer slots in one forward | Training |
+| Jev | `noul`, `choice`, `score` | A model trained for it, hosted |
+
+The observation behind Dynajev is that the right structure depends on the question, and that on a frozen causal model it can be chosen when the request arrives instead of being trained or fixed ahead of time. A yes/no question wants a two-row margin. Single-word options want a direct slice of those words; phrases want letters. A rating wants digit rows and an expectation rather than an argmax. Flags want independent yes/no branches, because a softmax would force exactly one. Several questions about the same text want one shared prefill and a branch per answer. With a few labels, a head can be swapped for a fitted one. None of this needs training, so it works on a model downloaded five minutes ago, and one request can mix all of it.
+
+The mechanism underneath is small: a language model's output layer is already a classifier over its vocabulary, so a closed answer is a handful of rows of that matrix read at the right position. What Dynajev adds is the compiler that decides, per question, which rows, which position, how many branches, and which combination rule.
 
 What you get compared with asking the model to write JSON:
 

@@ -20,7 +20,7 @@ const mono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: "Dynajev",
-  description: "Compile a readout head from the shape of a question and run it on a frozen open model.",
+  description: "A Jev-style decision head compiled per question and run on a frozen open-weight model at request time.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
